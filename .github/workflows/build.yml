@@ -19,7 +19,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       # Penting untuk merebuild library serialport agar cocok dengan Windows x64
       - name: Rebuild Native Modules
