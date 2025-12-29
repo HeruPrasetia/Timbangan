@@ -1,0 +1,31 @@
+name: Build Electron Windows
+on:
+  push:
+    tags:
+      - 'v*' # Jalan saat push tag v1.0.0, dst.
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # Gunakan versi Node LTS yang stabil
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      # Penting untuk merebuild library serialport agar cocok dengan Windows x64
+      - name: Rebuild Native Modules
+        run: npm run rebuild
+
+      - name: Build and Release Electron App
+        run: npm run buildwin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
