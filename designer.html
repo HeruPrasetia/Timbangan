@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Designer</title>
+    <link rel="stylesheet" href="designer.css">
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <div class="tool-section">
+            <h4>Fields (Data)</h4>
+            <div id="field-list">
+                <!-- Data fields will be injected here -->
+                <div class="tool-item" draggable="true" data-type="field" data-field="doc_number">No. Surat Jalan</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="timestamp">Tanggal / Waktu</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="party_name">Supplier / Pelanggan
+                </div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="driver_name">Nama Sopir</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="plate_number">No. Polisi</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="trx_type">Jenis Transaksi</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="notes">Catatan / Keterangan</div>
+
+                <div class="tool-item" draggable="true" data-type="field" data-field="weight_1">Berat Masuk (W1)</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="weight_2">[Berat 2]</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="refaksi">[Refaksi (%)]</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="weight">[Berat Bersih]</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="noted_weight">[Berat Nota]</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="diff_weight">Selisih</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="price">Harga Satuan</div>
+                <div class="tool-item" draggable="true" data-type="field" data-field="total_price">Total Harga</div>
+            </div>
+        </div>
+
+        <div class="h-separator"></div>
+
+        <div class="tool-section">
+            <h4>Static Elements</h4>
+            <div class="tool-item" draggable="true" data-type="label" data-text="Text Label">Text Label</div>
+            <div class="tool-item" draggable="true" data-type="line">Horizontal Line</div>
+            <div class="tool-item" draggable="true" data-type="rect">Rectangle / Box</div>
+        </div>
+    </div>
+
+    <div id="main-area">
+        <div id="toolbar-overlay"
+            style="position: absolute; top: 10px; right: 20px; z-index: 9999; display: flex; gap: 10px; align-items: center; pointer-events: auto;">
+            <select id="template-type"
+                style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: #eee; color: #000;">
+                <option value="Pembelian">Pembelian</option>
+                <option value="Penjualan">Penjualan</option>
+            </select>
+            <input type="text" id="template-name" placeholder="Nama Template (e.g. Draft 1)"
+                style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: #eee; width: 200px; color: #000;">
+            <select id="paper-size-select"
+                style="padding: 6px; border-radius: 4px; border: 1px solid #444; background: #eee; color: #000;">
+                <option value="A4">A4 (210 x 297 mm)</option>
+                <option value="A4_LANDSCAPE">A4 Landscape</option>
+                <option value="A5">A5 (148 x 210 mm)</option>
+                <option value="A5_LANDSCAPE" selected>A5 Landscape (Surat Jalan)</option>
+                <option value="LETTER">Letter</option>
+                <option value="HALF_LETTER">Half Letter (5.5" x 8.5")</option>
+            </select>
+            <button id="save-layout-btn" class="primary-btn">Save Layout</button>
+            <button id="close-btn" class="primary-btn" style="background:#555">Close</button>
+        </div>
+
+        <!-- Canvas wrapper to center it -->
+        <div style="padding: 50px; min-width: 100%; min-height: 100%; display: flex; justify-content: center;">
+            <div id="canvas-container" class="grid-10"
+                style="width: 794px; height: 560px; transition: width 0.3s, height 0.3s;">
+                <!-- Elements will be dropped here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="properties-panel">
+        <h4>Properties</h4>
+        <div id="no-selection-msg" style="color: #666; font-size: 12px; margin-top: 20px;">No element selected</div>
+
+        <div id="prop-form" style="display: none;">
+            <div class="prop-group">
+                <label>Text / Content</label>
+                <input type="text" id="prop-text">
+            </div>
+
+            <div class="prop-group">
+                <label>X Position</label>
+                <input type="number" id="prop-x">
+            </div>
+
+            <div class="prop-group">
+                <label>Y Position</label>
+                <input type="number" id="prop-y">
+            </div>
+
+            <div class="prop-group">
+                <label>Font Size (px)</label>
+                <input type="number" id="prop-fontSize" value="14">
+            </div>
+
+            <div class="prop-group">
+                <label>Width (px)</label>
+                <input type="number" id="prop-width" placeholder="auto">
+            </div>
+
+            <div class="prop-group">
+                <label>Height (px)</label>
+                <input type="number" id="prop-height" placeholder="auto">
+            </div>
+
+            <div class="prop-group">
+                <label>Font Weight</label>
+                <select id="prop-fontWeight">
+                    <option value="normal">Normal</option>
+                    <option value="bold">Bold</option>
+                    <option value="800">Extra Bold</option>
+                </select>
+            </div>
+
+            <div class="prop-group">
+                <label>Align</label>
+                <select id="prop-textAlign">
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                </select>
+            </div>
+
+            <div class="prop-group" style="margin-top:20px;">
+                <button id="delete-elem-btn"
+                    style="width: 100%; background: #f44336; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer;">Delete
+                    Element</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="designer.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,173 @@
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #1e1e1e;
+    color: #eee;
+    display: flex;
+    height: 100vh;
+}
+
+#sidebar {
+    width: 250px;
+    background-color: #252526;
+    border-right: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    user-select: none;
+    overflow-y: auto;
+    /* Enable vertical scrolling */
+    height: 100vh;
+    /* Full viewport height */
+}
+
+#properties-panel {
+    width: 250px;
+    background-color: #252526;
+    border-left: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+#main-area {
+    flex: 1;
+    background-color: #333;
+    position: relative;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#canvas-container {
+    background-color: white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+    color: black;
+    /* Default text color on paper */
+}
+
+/* Grids */
+#canvas-container.grid-10 {
+    background-image: linear-gradient(#ddd 1px, transparent 1px), linear-gradient(90deg, #ddd 1px, transparent 1px);
+    background-size: 10px 10px;
+}
+
+/* Tools/Components */
+.tool-section {
+    margin-bottom: 20px;
+}
+
+.tool-section h4 {
+    margin: 0 0 10px 0;
+    color: #888;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.tool-item {
+    padding: 8px 12px;
+    background-color: #333;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    cursor: grab;
+    border: 1px solid #444;
+    transition: background 0.2s;
+}
+
+.tool-item:hover {
+    background-color: #444;
+}
+
+.tool-item:active {
+    cursor: grabbing;
+}
+
+/* Canvas Elements */
+.design-element {
+    position: absolute;
+    border: 1px solid transparent;
+    /* Invisible border by default */
+    cursor: move;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.design-element:hover {
+    border: 1px dashed #aaa;
+}
+
+.design-element.selected {
+    border: 1px solid #2196F3;
+    z-index: 1000;
+}
+
+/* Resize Handles (Simplified for now - bottom right only) */
+.resize-handle {
+    width: 8px;
+    height: 8px;
+    background: #2196F3;
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    cursor: se-resize;
+    display: none;
+}
+
+.design-element.selected .resize-handle {
+    display: block;
+}
+
+/* Property Inputs */
+.prop-group {
+    margin-bottom: 15px;
+}
+
+.prop-group label {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.prop-group input,
+.prop-group select {
+    width: 100%;
+    background: #333;
+    border: 1px solid #444;
+    color: white;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.toolbar {
+    height: 40px;
+    background: #007ACC;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    justify-content: space-between;
+}
+
+.primary-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 6px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.primary-btn:hover {
+    background: #45a049;
+}
+
+.h-separator {
+    height: 1px;
+    background: #444;
+    margin: 15px 0;
+}

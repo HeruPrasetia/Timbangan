@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timbangan Loading</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1e1e24;
+            /* Matches app theme */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .logo-img {
+            max-width: 250px;
+            height: auto;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #4cc9f0;
+            /* Accent color */
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #8d99ae;
+            letter-spacing: 1px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        .version-text {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.8rem;
+            color: #495057;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="logo-container">
+        <!-- Using LogoPanjang.png as it's likely the text version -->
+        <img src="LogoPanjang.png" class="logo-img" alt="Timbangan Logo">
+    </div>
+    <div class="loader"></div>
+    <div class="loading-text">MEMUAT APLIKASI...</div>
+    <div id="version-text" class="version-text"></div>
+</body>
+
+</html>

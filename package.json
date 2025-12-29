@@ -1,0 +1,65 @@
+{
+  "name": "timbangan",
+  "version": "1.2.2",
+  "description": "Timbangan App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "buildwin": "electron-builder build --win portable --x64",
+    "buildmac": "electron-builder build --mac",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
+  },
+  "keywords": [],
+  "author": "NaylaTools Software - heru.praseti@gmail.com - 081234779772",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "chart.js": "^4.5.1",
+    "exceljs": "^4.4.0",
+    "googleapis": "^169.0.0",
+    "serialport": "^13.0.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.naylatools.timbangan",
+    "productName": "Timbangan",
+    "directories": {
+      "output": "dist"
+    },
+    "npmRebuild": true,
+    "buildDependenciesFromSource": false,
+    "icon": "Logo.png",
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**/*",
+      "**/node_modules/serialport/**/*"
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "renderer.js",
+      "style.css",
+      "package.json",
+      "Logo.png",
+      "LogoPanjang.png",
+      "surat_jalan.html",
+      "splash.html",
+      "designer.js",
+      "designer.html",
+      "designer.css",
+      "print_renderer.html",
+      "img/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "Logo.png"
+    }
+  }
+}
