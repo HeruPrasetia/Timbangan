@@ -1045,31 +1045,52 @@ ipcMain.handle('quit-and-install', () => {
 
     const appPath = process.execPath;
     const appDir = path.dirname(appPath);
-    const batPath = path.join(appDir, 'update.bat');
+    // Use temp directory for the batch file to avoid permission issues in the app dir
+    const batPath = path.join(app.getPath('temp'), 'update_timbangan.bat');
 
-    // Create a batch script to swap the files
-    // Use taskkill to ensure the process is dead, then replace
+    // Robust Update Strategy:
+    // 1. Wait for app to close
+    // 2. Rename current EXE to .old (allowed even if file is locked/running)
+    // 3. Move new EXE to original location
+    // 4. Start new EXE
+    // 5. Try to delete .old (ok if it fails, it will be cleaned next time)
+
     const batContent = `
 @echo off
-taskkill /F /PID ${process.pid}
 timeout /t 2 /nobreak > NUL
-del /F /Q "${appPath}"
+taskkill /F /PID ${process.pid} > NUL 2>&1
+
+:: Clean up previous backup if exists
+if exist "${appPath}.old" del /F /Q "${appPath}.old" > NUL 2>&1
+
+:: 1. Rename current executable (This works even if referenced by running process)
+move /Y "${appPath}" "${appPath}.old" > NUL 2>&1
+
+:: 2. Move new update to the application path
 move /Y "${updateFilePath}" "${appPath}"
+
+:: 3. Restart the application
 start "" "${appPath}"
-del "%~f0"
+
+:: Self-delete this script
+del "%~f0" & exit
     `;
 
-    fs.writeFileSync(batPath, batContent);
+    try {
+        fs.writeFileSync(batPath, batContent);
 
-    // Run the batch file detached
-    const child = spawn('cmd.exe', ['/c', batPath], {
-        detached: true,
-        stdio: 'ignore'
-    });
-    child.unref();
+        // Run the batch file detached
+        const child = spawn('cmd.exe', ['/c', batPath], {
+            detached: true,
+            stdio: 'ignore'
+        });
+        child.unref();
 
-    // The batch script starts separately, so it's fine.
-    app.quit();
+        // Quit the app to allow the batch script to proceed
+        app.quit();
+    } catch (err) {
+        console.error('Failed to create update script:', err);
+    }
 });
 
 // Google Sheets Sync Function (Bridge via Google Apps Script)
