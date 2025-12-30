@@ -83,7 +83,8 @@ db.exec(`
         plate_number TEXT,
         party_name TEXT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        notes TEXT
+        notes TEXT,
+        product_name TEXT
     )
 `);
 
@@ -98,6 +99,7 @@ function migrateDatabase() {
         { name: 'noted_weight', type: 'REAL DEFAULT 0' },
         { name: 'diff_weight', type: 'REAL DEFAULT 0' },
         { name: 'plate_number', type: 'TEXT' },
+        { name: 'product_name', type: 'TEXT' },
         { name: 'party_name', type: 'TEXT' },
         { name: 'trx_type', type: 'TEXT DEFAULT "Pembelian"' },
         { name: 'weight_1', type: 'REAL DEFAULT 0' },
@@ -228,51 +230,79 @@ ipcMain.on('connect-port', (event, { path, baudRate }) => {
 
 // Database IPC Handlers
 // Helper to generate DocNumber
-function generateDocNumber() {
+function generateDocNumber(DocType) {
     const now = new Date();
     const year = now.getFullYear().toString().slice(-2);
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
     const currentYYMM = parseInt(`${year}${month}`);
 
     // Check dbsrecno
-    const row = db.prepare("SELECT * FROM dbsrecno WHERE id = 'TIMBANG'").get();
+    const row = db.prepare(`SELECT * FROM dbsrecno WHERE id = '${DocType}'`).get();
 
     let newRecNo = 1;
 
     if (row) {
         if (row.YYMM === currentYYMM) {
             newRecNo = row.recno + 1;
-            db.prepare("UPDATE dbsrecno SET recno = ? WHERE id = 'TIMBANG'").run(newRecNo);
+            db.prepare(`UPDATE dbsrecno SET recno = ? WHERE id = '${DocType}'`).run(newRecNo);
         } else {
             // New Month, reset to 1
             newRecNo = 1;
-            db.prepare("UPDATE dbsrecno SET recno = ?, YYMM = ? WHERE id = 'TIMBANG'").run(newRecNo, currentYYMM);
+            db.prepare(`UPDATE dbsrecno SET recno = ?, YYMM = ? WHERE id = '${DocType}'`).run(newRecNo, currentYYMM);
         }
     } else {
         // First time ever
-        db.prepare("INSERT INTO dbsrecno (id, recno, YYMM) VALUES ('TIMBANG', ?, ?)").run(newRecNo, currentYYMM);
+        db.prepare(`INSERT INTO dbsrecno (id, recno, YYMM) VALUES ('${DocType}', ?, ?)`).run(newRecNo, currentYYMM);
     }
 
     const seq = newRecNo.toString().padStart(4, '0');
-    return `TIMBANG-${year}${month}${seq}`;
+    return `${DocType}-${year}${month}${seq}`;
 }
 
 // Database IPC Handlers
 ipcMain.handle('save-weight', async (event, data) => {
     console.log('--- IPC save-weight received ---', data);
     try {
-        const { id, weight, unit, price, noted_weight, plate_number, party_name, notes, trx_type, weight_1, weight_2, diff_weight, driver_name, refaksi } = data;
+        const { id, weight, unit, price, noted_weight, plate_number, party_name, notes, trx_type, weight_1, weight_2, diff_weight, driver_name, refaksi, product_name } = data;
         console.log(`[DEBUG] Received Weight Save: ID=${id}, Type=${trx_type}`);
+
+        // Ensure all named parameters strictly exist
+        const safeData = {
+            id: id || null,
+            weight: weight || 0,
+            unit: unit || 'kg',
+            price: price || 0,
+            noted_weight: noted_weight || 0,
+            diff_weight: diff_weight || 0,
+            plate_number: plate_number || '',
+            party_name: party_name || '',
+            product_name: product_name || '',
+            trx_type: trx_type || 'Pembelian',
+            weight_1: weight_1 || 0,
+            weight_2: weight_2 || 0,
+            driver_name: driver_name || '',
+            refaksi: refaksi || 0,
+            notes: notes || '',
+            doc_number: generateDocNumber(trx_type == 'Pembelian' ? 'PURCH' : 'SALES')
+        };
 
         if (id) {
             // Update existing record (Second Stage)
             // timestamp_2 is set to NOW
+            // We use safeData to ensure no missing params, but we overwrite doc_number logic if it's an update (usually doc_number stays same)
+            // Actually for update we just need the fields for UPDATE + id
             const stmt = db.prepare(`
-                UPDATE weights 
-                SET weight = ?, weight_2 = ?, diff_weight = ?, refaksi = ?, timestamp_2 = CURRENT_TIMESTAMP, timestamp = CURRENT_TIMESTAMP
-                WHERE id = ?
+                UPDATE weights SET
+                    weight = @weight,
+                    weight_2 = @weight_2,
+                    diff_weight = @diff_weight,
+                    refaksi = @refaksi,
+                    timestamp_2 = CURRENT_TIMESTAMP,
+                    timestamp = CURRENT_TIMESTAMP,
+                    product_name = @product_name
+                WHERE id = @id
             `);
-            stmt.run(weight, weight_2, diff_weight, refaksi || 0, id);
+            stmt.run(safeData);
 
             // Trigger Google Sheets Sync (Second Stage)
             try {
@@ -286,15 +316,19 @@ ipcMain.handle('save-weight', async (event, data) => {
             return { success: true, id: id };
         } else {
             // Create new record (First Stage)
-            // Use custom generator
-            const doc_number = generateDocNumber();
 
             const stmt = db.prepare(`
-                INSERT INTO weights (weight, unit, price, noted_weight, diff_weight, plate_number, party_name, notes, trx_type, weight_1, weight_2, driver_name, doc_number, refaksi, timestamp_1) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT INTO weights (
+                    weight, unit, price, noted_weight, diff_weight,
+                    plate_number, party_name, product_name, trx_type,
+                    weight_1, weight_2, driver_name, doc_number, refaksi, timestamp_1, notes
+                ) VALUES (
+                    @weight, @unit, @price, @noted_weight, @diff_weight,
+                    @plate_number, @party_name, @product_name, @trx_type,
+                    @weight_1, @weight_2, @driver_name, @doc_number, @refaksi, CURRENT_TIMESTAMP, @notes
+                )
             `);
-
-            const info = stmt.run(weight, unit, price || 0, noted_weight || 0, diff_weight, plate_number || '', party_name || '', notes || '', trx_type || 'Pembelian', weight_1 || 0, weight_2 || 0, driver_name || '', doc_number, refaksi || 0);
+            const info = stmt.run(safeData);
             return { success: true, id: info.lastInsertRowid };
         }
     } catch (error) {
@@ -412,6 +446,7 @@ ipcMain.handle('export-to-excel', async (event, params) => {
             { header: 'ID', key: 'id', width: 10 },
             { header: 'Waktu', key: 'timestamp', width: 25 },
             { header: 'Supplier/Pelanggan', key: 'party_name', width: 25 },
+            { header: 'Jenis Barang', key: 'product_name', width: 20 },
             { header: 'No Plat', key: 'plate_number', width: 15 },
             { header: 'Jenis', key: 'trx_type', width: 15 },
             { header: 'Timbang 1 (kg)', key: 'weight_1', width: 15 },
@@ -427,6 +462,7 @@ ipcMain.handle('export-to-excel', async (event, params) => {
                 id: item.id,
                 timestamp: new Date(item.timestamp).toLocaleString('id-ID'),
                 party_name: item.party_name || '-',
+                product_name: item.product_name || '-',
                 plate_number: item.plate_number || '-',
                 trx_type: item.trx_type || 'Pembelian',
                 weight_1: item.weight_1 || 0,
@@ -753,7 +789,9 @@ ipcMain.handle('print-surat-jalan', async (event, data) => {
                 setText('trx-type', "${data.trx_type || '-'}"); // Barang/Jenis
                 setText('notes', "${data.notes || ''}");
                 
+                setText('lbl-party-name', "${data.trx_type == 'Pembelian' ? 'Supplier' : 'Pelanggan'}");
                 setText('party-name', "${data.party_name || '-'}");
+                setText('product-name', "${data.product_name || '-'}");
                 setText('driver-name', "${data.driver_name || '-'}");
                 setText('plate-number', "${data.plate_number || '-'}");
 
@@ -1047,7 +1085,7 @@ async function syncToGoogleSheets(data, targetUrl = null) {
                 data.doc_number,
                 data.party_name,
                 data.plate_number,
-                data.driver_name || '-',
+                data.product_name,
                 data.trx_type,
                 data.weight_1,
                 data.timestamp_1,

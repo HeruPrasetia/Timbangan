@@ -19,10 +19,9 @@ const closeModalBtn = document.getElementById('close-modal-btn');
 
 // Inputs
 const partyNameInput = document.getElementById('party-name');
-const driverNameInput = document.getElementById('driver-name');
+const productNameInput = document.getElementById('product-name');
 const plateNumberInput = document.getElementById('plate-number');
 const notedWeightInput = document.getElementById('noted-weight');
-const unitPriceInput = document.getElementById('unit-price');
 const trxTypeInput = document.getElementById('trx-type');
 const refaksiInput = document.getElementById('input-refaksi');
 const refaksiGroup = document.getElementById('refaksi-group');
@@ -207,10 +206,9 @@ saveBtn.addEventListener('click', () => {
 
     // Reset Modal Inputs
     partyNameInput.value = '';
+    productNameInput.value = '';
     plateNumberInput.value = '';
-    driverNameInput.value = ''; // Reset Driver
     notedWeightInput.value = '';
-    unitPriceInput.value = '';
     trxTypeInput.value = 'Pembelian';
 
     // Reset Stage
@@ -233,7 +231,7 @@ function setStage(stage) {
 
         // Unlock inputs
         partyNameInput.disabled = false;
-        driverNameInput.disabled = false;
+        productNameInput.disabled = false;
         plateNumberInput.disabled = false;
         trxTypeInput.disabled = false;
         refaksiGroup.style.display = 'none';
@@ -245,7 +243,7 @@ function setStage(stage) {
 
         // Locked inputs (filled from pending record)
         partyNameInput.disabled = true;
-        driverNameInput.disabled = true;
+        productNameInput.disabled = true;
         plateNumberInput.disabled = true;
         trxTypeInput.disabled = true;
         refaksiGroup.style.display = 'block';
@@ -259,7 +257,7 @@ async function loadPendingWeights() {
         const option = document.createElement('option');
         option.value = item.id;
         const date = new Date(item.timestamp).toLocaleTimeString();
-        option.textContent = `${item.doc_number} - 🚚 ${item.plate_number} - ${item.party_name} (${Math.round(item.weight_1)} kg) ⏰ [${date}]`;
+        option.textContent = `${item.doc_number} - 🚚 ${item.plate_number} - ${item.product_name || 'Barang'} - ${item.party_name} (${Math.round(item.weight_1)} kg) ⏰ [${date}]`;
         option.pendingData = item;
         pendingWeightSelect.appendChild(option);
     });
@@ -273,10 +271,9 @@ pendingWeightSelect.addEventListener('change', () => {
 
         // Fill form
         partyNameInput.value = data.party_name;
-        driverNameInput.value = data.driver_name || ''; // Fill Driver
+        productNameInput.value = data.product_name || '';
         plateNumberInput.value = data.plate_number;
         trxTypeInput.value = data.trx_type;
-        unitPriceInput.value = data.price;
         notedWeightInput.value = data.noted_weight;
 
         // Show previews
@@ -321,10 +318,11 @@ confirmSaveBtn.addEventListener('click', async () => {
     const data = {
         unit: 'kg',
         party_name: partyNameInput.value,
-        driver_name: driverNameInput.value,
+        product_name: productNameInput.value,
+        driver_name: '-',
         plate_number: plateNumberInput.value,
         noted_weight: parseFloat(notedWeightInput.value) || 0,
-        price: parseFloat(unitPriceInput.value) || 0,
+        price: 0,
         trx_type: trxTypeInput.value,
         refaksi: refaksiInput.value,
         notes: ''
@@ -417,10 +415,10 @@ async function loadHistory() {
                 <div class="history-detail">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="history-party">${item.party_name || '-'}</span>
+                        <span style="font-size: 0.75rem; background: #333; padding: 2px 6px; border-radius: 4px; color: #ccc;">${item.product_name || '-'}</span>
                         <span class="trx-badge ${item.trx_type === 'Penjualan' ? 'penjualan' : 'pembelian'}">${item.trx_type || 'Pembelian'}</span>
                     </div>
                     <span class="history-plate">${item.plate_number || 'No Plate'}</span>
-                    <span class="history-price">Rp ${item.price?.toLocaleString()} /kg</span>
                 </div>
             </td>
             <td>
