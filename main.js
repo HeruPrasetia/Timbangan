@@ -262,6 +262,7 @@ ipcMain.handle('save-weight', async (event, data) => {
     console.log('--- IPC save-weight received ---', data);
     try {
         const { id, weight, unit, price, noted_weight, plate_number, party_name, notes, trx_type, weight_1, weight_2, diff_weight, driver_name, refaksi } = data;
+        console.log(`[DEBUG] Received Weight Save: ID=${id}, Type=${trx_type}`);
 
         if (id) {
             // Update existing record (Second Stage)
@@ -898,13 +899,13 @@ ipcMain.handle('get-report-chart-data', async (event, { year, month }) => {
             }
         }
 
-        let query = `SELECT ${selectLabel}, SUM(weight) as totalWeight FROM weights`;
+        let query = `SELECT ${selectLabel}, trx_type, SUM(weight) as totalWeight FROM weights`;
 
         if (conditions.length > 0) {
             query += ' WHERE ' + conditions.join(' AND ');
         }
 
-        query += ` GROUP BY ${groupBy} ORDER BY label ASC`;
+        query += ` GROUP BY ${groupBy}, trx_type ORDER BY label ASC`;
 
         const rows = db.prepare(query).all(...args);
         return rows;
@@ -1098,7 +1099,12 @@ async function syncToGoogleSheets(data, targetUrl = null) {
                 resolve(false);
             });
 
-            req.write(JSON.stringify({ values: rowValues }));
+            const payload = {
+                values: rowValues,
+                sheetName: data.trx_type || 'Pembelian'
+            };
+            console.log('[DEBUG] Syncing to GSheets:', JSON.stringify(payload, null, 2));
+            req.write(JSON.stringify(payload));
             req.end();
 
         } catch (error) {

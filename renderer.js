@@ -940,6 +940,7 @@ const statTotalNetto = document.getElementById('stat-total-netto');
 let reportChart = null;
 let supplierChart = null;
 let customerChart = null;
+const monthNamesIn = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
 function initReportFilters() {
     if (!reportYearSelect) return;
@@ -976,9 +977,36 @@ async function loadReportData() {
     try {
         const chartData = await window.electronAPI.getReportChartData({ year, month });
 
-        // Process Data
-        const labels = chartData.map(d => d.label);
-        const data = chartData.map(d => d.totalWeight);
+        // Process Data: Split into Pembelian and Penjualan
+        let labels = [];
+        if (!month) {
+            // Yearly view: Always 12 months
+            labels = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+        } else {
+            // Monthly view: all days up to the last day of the month
+            const lastDay = new Date(year, month, 0).getDate();
+            for (let i = 1; i <= lastDay; i++) {
+                labels.push(i.toString().padStart(2, '0'));
+            }
+        }
+
+        // Format Labels for display
+        const displayLabels = labels.map(l => {
+            if (!month) {
+                const monthIndex = parseInt(l) - 1;
+                return `${monthNamesIn[monthIndex]} ${year}`;
+            }
+            return l; // Just the day number for monthly view
+        });
+
+        const pembelianData = labels.map(label => {
+            const match = chartData.find(d => d.label === label && d.trx_type === 'Pembelian');
+            return match ? match.totalWeight : 0;
+        });
+        const penjualanData = labels.map(label => {
+            const match = chartData.find(d => d.label === label && d.trx_type === 'Penjualan');
+            return match ? match.totalWeight : 0;
+        });
 
         // 3. Render Chart
         const ctx = document.getElementById('reportChart').getContext('2d');
@@ -987,21 +1015,34 @@ async function loadReportData() {
             reportChart.destroy();
         }
 
-        const barColor = getComputedStyle(document.body).getPropertyValue('--accent-color').trim() || '#3498db';
         const textColor = getComputedStyle(document.body).getPropertyValue('--text-primary').trim() || '#eee';
+
+        // Colors
+        const colorPembelian = '#4CAF50'; // Green
+        const colorPenjualan = '#E91E63'; // Pink/Red
 
         reportChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
-                datasets: [{
-                    label: `Total Berat (kg) - ${label}`,
-                    data: data,
-                    backgroundColor: barColor,
-                    borderColor: barColor,
-                    borderWidth: 1,
-                    barPercentage: 0.6
-                }]
+                labels: displayLabels, // Use pretty labels here
+                datasets: [
+                    {
+                        label: `Pembelian (kg)`,
+                        data: pembelianData,
+                        backgroundColor: colorPembelian,
+                        borderColor: colorPembelian,
+                        borderWidth: 1,
+                        barPercentage: 0.6
+                    },
+                    {
+                        label: `Penjualan (kg)`,
+                        data: penjualanData,
+                        backgroundColor: colorPenjualan,
+                        borderColor: colorPenjualan,
+                        borderWidth: 1,
+                        barPercentage: 0.6
+                    }
+                ]
             },
             options: {
                 responsive: true,
