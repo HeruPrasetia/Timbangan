@@ -2,11 +2,15 @@ name: Build Electron Windows
 on:
   push:
     tags:
-      - 'v*' # Jalan saat push tag v1.0.0, dst.
+      - 'v*'
 
 jobs:
   release:
     runs-on: windows-latest
+    # --- TAMBAHKAN BAGIAN INI ---
+    permissions:
+      contents: write
+    # ----------------------------
 
     steps:
       - name: Checkout Code
@@ -15,13 +19,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 # Gunakan versi Node LTS yang stabil
+          node-version: 20
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
-      # Penting untuk merebuild library serialport agar cocok dengan Windows x64
       - name: Rebuild Native Modules
         run: npm run rebuild
 
