@@ -82,7 +82,7 @@ db.exec(`
         diff_weight REAL DEFAULT 0,
         plate_number TEXT,
         party_name TEXT,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        timestamp DATETIME DEFAULT (DATETIME('now', 'localtime')),
         notes TEXT,
         product_name TEXT
     )
@@ -149,7 +149,7 @@ db.exec(`
             name TEXT,
             content TEXT,
             is_active INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT (DATETIME('now', 'localtime'))
         )
     `);
 
@@ -297,8 +297,8 @@ ipcMain.handle('save-weight', async (event, data) => {
                     weight_2 = @weight_2,
                     diff_weight = @diff_weight,
                     refaksi = @refaksi,
-                    timestamp_2 = CURRENT_TIMESTAMP,
-                    timestamp = CURRENT_TIMESTAMP,
+                    timestamp_2 = DATETIME('now', 'localtime'),
+                    timestamp = DATETIME('now', 'localtime'),
                     product_name = @product_name
                 WHERE id = @id
             `);
@@ -325,7 +325,7 @@ ipcMain.handle('save-weight', async (event, data) => {
                 ) VALUES (
                     @weight, @unit, @price, @noted_weight, @diff_weight,
                     @plate_number, @party_name, @product_name, @trx_type,
-                    @weight_1, @weight_2, @driver_name, @doc_number, @refaksi, CURRENT_TIMESTAMP, @notes
+                    @weight_1, @weight_2, @driver_name, @doc_number, @refaksi, DATETIME('now', 'localtime'), @notes
                 )
             `);
             const info = stmt.run(safeData);

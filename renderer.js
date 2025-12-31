@@ -514,7 +514,7 @@ exportExcelBtn.addEventListener('click', async () => {
 });
 
 // Set default dates to today
-const today = new Date().toISOString().split('T')[0];
+const today = new Date().toLocaleDateString('sv-SE');
 filterStartDate.value = today;
 filterEndDate.value = today;
 
