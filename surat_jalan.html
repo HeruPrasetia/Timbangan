@@ -166,13 +166,60 @@
         }
 
         @media print {
+            @page {
+                size: auto;
+                margin: 0;
+            }
+
             body {
                 padding: 0;
+                margin: 0;
             }
 
             .container {
                 border: none;
-                padding: 0;
+                padding: 5mm;
+                margin: 0 !important;
+                max-height: 125mm;
+                /* Safe for 5.5 inch (139.7mm) */
+                overflow: hidden;
+                box-sizing: border-box;
+            }
+
+            .header {
+                margin-bottom: 3px;
+                padding-bottom: 3px;
+            }
+
+            .company-info h1 {
+                font-size: 18px;
+            }
+
+            .company-info p {
+                font-size: 10px;
+            }
+
+            .doc-title {
+                font-size: 16px;
+                margin-bottom: 2px;
+            }
+
+            .content {
+                gap: 5px;
+            }
+
+            .row .label,
+            .row .value {
+                padding: 2px 5px;
+                font-size: 10px;
+            }
+
+            .footer {
+                margin-top: 10px;
+            }
+
+            .sign-gap {
+                height: 30px;
             }
 
             .holes-left,

@@ -664,6 +664,7 @@ const settingCompanyName = document.getElementById('setting-company-name');
 const settingCompanyAddress = document.getElementById('setting-company-address');
 const settingCompanyPhone = document.getElementById('setting-company-phone');
 const settingAppTheme = document.getElementById('setting-app-theme');
+const settingGoogleScriptUrl = document.getElementById('setting-google-script-url');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
 
 async function loadAppSettings() {
@@ -678,6 +679,8 @@ async function loadAppSettings() {
         const theme = settings.app_theme || 'dark';
         settingAppTheme.value = theme;
         applyTheme(theme);
+
+        settingGoogleScriptUrl.value = settings.google_script_url || '';
     }
 }
 
@@ -688,6 +691,11 @@ function applyTheme(theme) {
         document.body.classList.remove('light-mode');
     }
 }
+
+settingGoogleScriptUrl.addEventListener('change', async () => {
+    const url = settingGoogleScriptUrl.value;
+    await window.electronAPI.saveSettings({ google_script_url: url });
+});
 
 // Live preview and auto-save for theme
 settingAppTheme.addEventListener('change', async () => {
@@ -707,7 +715,7 @@ saveSettingsBtn.addEventListener('click', async () => {
 
     const result = await window.electronAPI.saveSettings(settings);
     if (result.success) {
-        alert('Informasi Perusahaan berhasil disimpan!');
+        alert('Pengaturan Berhasil Disimpan!');
     } else {
         alert('Gagal menyimpan pengaturan: ' + result.error);
     }

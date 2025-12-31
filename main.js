@@ -531,13 +531,10 @@ ipcMain.handle('restore-database', async () => {
 
         const sourcePath = filePaths[0];
 
-        // Close current connection
         db.close();
 
-        // Overwrite file
         fs.copyFileSync(sourcePath, dbPath);
 
-        // Relaunch app to reload database cleanly
         app.relaunch();
         app.exit();
 
@@ -1096,7 +1093,25 @@ del "%~f0" & exit
 // Google Sheets Sync Function (Bridge via Google Apps Script)
 // Handles redirects (302) which are common with Google Apps Script
 async function syncToGoogleSheets(data, targetUrl = null) {
-    const SCRIPT_URL = targetUrl || 'https://script.google.com/macros/s/AKfycbylbPAEigx5b3Xh8L5GxuQD52cggRe1dio63Km_1ktqzYOGchN0cXpWc_AnvRsXvHs/exec';
+    let SCRIPT_URL = targetUrl;
+
+    if (!SCRIPT_URL) {
+        try {
+            const setting = db.prepare("SELECT value FROM settings WHERE key = 'google_script_url'").get();
+            if (setting && setting.value && setting.value.trim() !== "") {
+                SCRIPT_URL = setting.value.trim();
+            } else {
+                console.log('Skipping Google Sheets Sync (No URL configured)');
+                return Promise.resolve(true);
+            }
+        } catch (dbErr) {
+            console.error('Error fetching Google Script URL:', dbErr);
+            return Promise.resolve(false);
+        }
+    }
+
+    // Default Fallback (OPTIONAL: Remove if strict config is desired, but good for safety)
+    // const SCRIPT_URL = targetUrl || 'https://script.google.com/macros/s/.../exec'; 
 
     return new Promise((resolve, reject) => {
         try {
