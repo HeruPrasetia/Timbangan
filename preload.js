@@ -4,10 +4,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
     listPorts: () => ipcRenderer.invoke('list-ports'),
     connectPort: (config) => ipcRenderer.send('connect-port', config),
     disconnectPort: () => ipcRenderer.send('disconnect-port'),
-    onPortData: (callback) => ipcRenderer.on('port-data', (_event, value) => callback(value)),
-    onPortDataRaw: (callback) => ipcRenderer.on('port-data-raw', (_event, value) => callback(value)),
-    onPortError: (callback) => ipcRenderer.on('port-error', (_event, value) => callback(value)),
-    onPortConnected: (callback) => ipcRenderer.on('port-connected', (_event, value) => callback(value)),
+    onPortData: (callback) => {
+        const listener = (_event, value) => callback(value);
+        ipcRenderer.on('port-data', listener);
+        return () => ipcRenderer.removeListener('port-data', listener);
+    },
+    onPortDataRaw: (callback) => {
+        const listener = (_event, value) => callback(value);
+        ipcRenderer.on('port-data-raw', listener);
+        return () => ipcRenderer.removeListener('port-data-raw', listener);
+    },
+    onPortError: (callback) => {
+        const listener = (_event, value) => callback(value);
+        ipcRenderer.on('port-error', listener);
+        return () => ipcRenderer.removeListener('port-error', listener);
+    },
+    onPortConnected: (callback) => {
+        const listener = (_event, value) => callback(value);
+        ipcRenderer.on('port-connected', listener);
+        return () => ipcRenderer.removeListener('port-connected', listener);
+    },
+    onPortDisconnected: (callback) => {
+        const listener = (_event, value) => callback(value);
+        ipcRenderer.on('port-disconnected', listener);
+        return () => ipcRenderer.removeListener('port-disconnected', listener);
+    },
 
     // Database methods
     saveWeight: (data) => ipcRenderer.invoke('save-weight', data),
@@ -27,8 +48,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getHistoryById: (id) => ipcRenderer.invoke('get-history-by-id', id),
     // Update API
     downloadUpdate: () => ipcRenderer.invoke('download-update'),
-    onUpdateProgress: (callback) => ipcRenderer.on('update-progress', (event, percent) => callback(percent)),
-    onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', (event, filePath) => callback(filePath)),
+    onUpdateProgress: (callback) => {
+        const listener = (event, percent) => callback(percent);
+        ipcRenderer.on('update-progress', listener);
+        return () => ipcRenderer.removeListener('update-progress', listener);
+    },
+    onUpdateDownloaded: (callback) => {
+        const listener = (event, filePath) => callback(filePath);
+        ipcRenderer.on('update-downloaded', listener);
+        return () => ipcRenderer.removeListener('update-downloaded', listener);
+    },
     quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
 
     // Advanced SQL
@@ -52,5 +81,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getPrintTemplate: () => ipcRenderer.invoke('get-print-template'),
     savePrintTemplate: (content) => ipcRenderer.invoke('save-print-template', content), // Keeping for compatibility or specific raw usage if needed
     resetPrintTemplate: () => ipcRenderer.invoke('reset-print-template'),
-    onTemplateListUpdated: (callback) => ipcRenderer.on('template-list-updated', () => callback())
+    onTemplateListUpdated: (callback) => {
+        const listener = () => callback();
+        ipcRenderer.on('template-list-updated', listener);
+        return () => ipcRenderer.removeListener('template-list-updated', listener);
+    }
 });

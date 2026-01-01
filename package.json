@@ -5,7 +5,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm run dev-react\" \"wait-on http://localhost:5173 && npm run start\"",
+    "dev-react": "vite",
+    "build": "npm run build-react && npm run buildwin",
+    "build-react": "vite build",
     "buildwin": "electron-builder build --win portable --x64",
     "buildmac": "electron-builder build --mac",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
@@ -19,12 +22,20 @@
     "chart.js": "^4.5.1",
     "exceljs": "^4.4.0",
     "googleapis": "^169.0.0",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^19.2.3",
     "serialport": "^13.0.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.6.0",
+    "@vitejs/plugin-react": "^5.1.2",
+    "concurrently": "^9.2.1",
     "electron": "^33.2.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "vite": "^7.3.0",
+    "wait-on": "^9.0.3"
   },
   "build": {
     "appId": "com.naylatools.timbangan",
@@ -34,7 +45,7 @@
     },
     "npmRebuild": true,
     "buildDependenciesFromSource": false,
-    "icon": "Logo.png",
+    "icon": "src/assets/Logo.png",
     "asar": true,
     "asarUnpack": [
       "**/node_modules/better-sqlite3/**/*",
@@ -47,19 +58,20 @@
       "renderer.js",
       "style.css",
       "package.json",
-      "Logo.png",
-      "LogoPanjang.png",
+      "src/assets/Logo.png",
+      "src/assets/LogoPanjang.png",
       "surat_jalan.html",
       "splash.html",
       "designer.js",
       "designer.html",
       "designer.css",
       "print_renderer.html",
-      "img/**/*"
+      "src/assets/img/**/*",
+      "dist-react/**/*"
     ],
     "win": {
       "target": "portable",
-      "icon": "Logo.png"
+      "icon": "src/assets/Logo.png"
     }
   }
 }

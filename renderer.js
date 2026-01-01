@@ -435,10 +435,10 @@ async function loadHistory() {
             </td>
             <td>
                 <button class="print-btn" data-id="${item.id}" title="Cetak">
-                    <img src="img/icon-print.svg" alt="Logo">
+                    <img src="src/assets/img/icon-print.svg" alt="Logo">
                 </button>
                 <button class="delete-btn" data-id="${item.id}" title="Hapus">
-                    <img src="img/icon-delete.png" alt="Logo">
+                    <img src="src/assets/img/icon-delete.png" alt="Logo">
                 </button>
             </td>
         `;

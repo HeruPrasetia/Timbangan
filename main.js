@@ -24,11 +24,15 @@ function createWindow() {
             contextIsolation: true,
             nodeIntegration: false
         },
-        icon: path.join(__dirname, 'Logo.png'),
+        icon: path.join(__dirname, 'src', 'assets', 'Logo.png'),
         autoHideMenuBar: true
     });
 
-    mainWindow.loadFile('index.html');
+    if (app.isPackaged) {
+        mainWindow.loadFile(path.join(__dirname, 'dist-react', 'index.html'));
+    } else {
+        mainWindow.loadURL('http://localhost:5173');
+    }
 
     // 2. Create Splash Window
     splashWindow = new BrowserWindow({
@@ -38,7 +42,7 @@ function createWindow() {
         frame: false,
         alwaysOnTop: true,
         resizable: false,
-        icon: path.join(__dirname, 'Logo.png'),
+        icon: path.join(__dirname, 'src', 'assets', 'Logo.png'),
         webPreferences: {
             nodeIntegration: false
         }
@@ -681,7 +685,7 @@ ipcMain.handle('open-report-designer', async (event, templateId = null) => {
     const designerWindow = new BrowserWindow({
         fullscreen: true,
         title: 'Report Designer',
-        icon: path.join(__dirname, 'Logo.png'),
+        icon: path.join(__dirname, 'src', 'assets', 'Logo.png'),
         webPreferences: {
             nodeIntegration: false, // Security: use preload if possible, but for now we might rely on window.electronAPI if attached effectively.
             contextIsolation: true,
@@ -1188,8 +1192,9 @@ async function syncToGoogleSheets(data, targetUrl = null) {
     });
 }
 
-ipcMain.on('disconnect-port', () => {
+ipcMain.on('disconnect-port', (event) => {
     if (currentPort && currentPort.isOpen) {
         currentPort.close();
     }
+    event.reply('port-disconnected');
 });

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timbangan Digital Premium</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="src/assets/LogoPanjang.png" class="logo-img" alt="Logo">
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="dashboard-view">
+                    <span class="nav-icon">
+                        <img src="src/assets/img/icon-dashboard.svg" alt="Logo">
+                    </span>
+                    <span class="nav-text">Timbangan</span>
+                </button>
+                <button class="nav-item" data-tab="history-view">
+                    <span class="nav-icon">
+                        <img src="src/assets/img/icon-data.svg" alt="Logo">
+                    </span>
+                    <span class="nav-text">Riwayat</span>
+                </button>
+                <button class="nav-item" data-tab="reports-view">
+                    <span class="nav-icon">
+                        <img src="src/assets/img/icon-laporan.svg" alt="Rpt">
+                    </span>
+                    <span class="nav-text">Laporan</span>
+                </button>
+                <button class="nav-item" data-tab="settings-view">
+                    <span class="nav-icon">
+                        <img src="src/assets/img/icon-setting.svg" alt="Logo">
+                    </span>
+                    <span class="nav-text">Settings</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <div class="status-dot" id="app-status-dot"></div>
+                    <span id="app-status">Disconnected</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- View: Dashboard -->
+            <div id="dashboard-view" class="tab-view active">
+                <header class="view-header">
+                    <h2>Live Dashboard</h2>
+                    <div class="header-actions">
+                        <button id="refresh-ports" class="icon-btn" title="Refresh Ports">
+                            <img src="src/assets/img/icon-reload.png" alt="Logo">
+                        </button>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <div class="stats-column">
+                        <section class="weight-card">
+                            <div class="weight-main">
+                                <span id="weight-value">0.00</span>
+                                <span class="weight-unit">kg</span>
+                            </div>
+                            <button id="save-weight-btn" class="primary-btn secondary">Simpan Hasil</button>
+                        </section>
+
+                        <section class="raw-data-section">
+                            <label>Raw Data Stream</label>
+                            <div id="raw-data" class="raw-data-box">Menunggu data...</div>
+                        </section>
+                    </div>
+
+                    <aside class="settings-panel">
+                        <div class="settings-card">
+                            <label>Configuration</label>
+
+                            <div class="input-group">
+                                <span>Serial Port</span>
+                                <select id="port-select">
+                                    <option value="" disabled selected>Pilih Port...</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <span>Baud Rate</span>
+                                <select id="baud-rate">
+                                    <option value="9600" selected>9600</option>
+                                    <option value="19200">19200</option>
+                                    <option value="38400">38400</option>
+                                    <option value="57600">57600</option>
+                                    <option value="115200">115200</option>
+                                </select>
+                            </div>
+
+                            <!-- Divider moved to Settings -->
+
+                            <button id="connect-btn" class="primary-btn">Hubungkan</button>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <!-- View: History -->
+            <div id="history-view" class="tab-view">
+                <header class="view-header">
+                    <h2>Transaction History</h2>
+                    <div class="filter-bar">
+                        <div class="filter-group">
+                            <label>Dari:</label>
+                            <input type="date" id="filter-start-date">
+                        </div>
+                        <div class="filter-group">
+                            <label>Sampai:</label>
+                            <input type="date" id="filter-end-date">
+                        </div>
+                        <button id="apply-filter-btn" class="icon-btn" title="Filter History">
+                            <img src="src/assets/img/icon-reload.png" alt="Filter">
+                        </button>
+                        <button id="export-excel-btn" class="icon-btn excel-btn" title="Export ke Excel">
+                            <img src="src/assets/img/icon-export.png" alt="Excel">
+                        </button>
+                    </div>
+                </header>
+
+                <div class="history-card">
+                    <div class="history-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Detail</th>
+                                    <th>Berat (kg)</th>
+                                    <th>Selisih</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-footer">
+                        <button id="prev-page-btn" class="nav-btn-mini" disabled>
+                            <span class="btn-text">Sebalumnya</span>
+                        </button>
+                        <div class="page-info">
+                            Page <span id="current-page">1</span> of <span id="total-pages">1</span>
+                        </div>
+                        <button id="next-page-btn" class="nav-btn-mini" disabled>
+                            <span class="btn-text">Berikutnya</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Reports -->
+            <div id="reports-view" class="tab-view">
+                <header class="view-header">
+                    <h2>Laporan & Statistik</h2>
+                    <div class="filter-bar">
+                        <div class="filter-group">
+                            <label>Tahun:</label>
+                            <select id="report-year"></select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Bulan:</label>
+                            <select id="report-month">
+                                <option value="">Semua Bulan</option>
+                                <option value="01">Januari</option>
+                                <option value="02">Februari</option>
+                                <option value="03">Maret</option>
+                                <option value="04">April</option>
+                                <option value="05">Mei</option>
+                                <option value="06">Juni</option>
+                                <option value="07">Juli</option>
+                                <option value="08">Agustus</option>
+                                <option value="09">September</option>
+                                <option value="10">Ktober</option>
+                                <option value="11">November</option>
+                                <option value="12">Desember</option>
+                            </select>
+                        </div>
+                        <button id="refresh-report-btn" class="icon-btn" title="Refresh Laporan">
+                            <img src="src/assets/img/icon-reload.png" alt="Refresh">
+                        </button>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid full-width" style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Summary Cards -->
+                    <div class="summary-cards"
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="card stat-card"
+                            style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <h4 style="color: var(--text-secondary); margin: 0 0 10px 0;">Total Transaksi</h4>
+                            <div class="stat-value" id="stat-total-transaksi"
+                                style="font-size: 1.5rem; font-weight: bold;">0</div>
+                        </div>
+                        <div class="card stat-card"
+                            style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <h4 style="color: var(--text-secondary); margin: 0 0 10px 0;">Total Berat (Netto)</h4>
+                            <div class="stat-value" id="stat-total-netto"
+                                style="font-size: 1.5rem; font-weight: bold; color: var(--accent-color);">0 kg</div>
+                        </div>
+                        <!-- 
+                        <div class="card stat-card" style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <h4 style="color: var(--text-secondary); margin: 0 0 10px 0;">Total Pendapatan (Est.)</h4>
+                            <div class="stat-value" id="stat-total-money" style="font-size: 1.5rem; font-weight: bold; color: #4CAF50;">Rp 0</div>
+                        </div>
+                        -->
+                    </div>
+
+                    <!-- Chart Section -->
+                    <div class="chart-container"
+                        style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); height: 400px; position: relative;">
+                        <canvas id="reportChart"></canvas>
+                    </div>
+
+                    <!-- Party Charts Section -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+                        <div class="chart-container"
+                            style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); height: 350px; position: relative;">
+                            <h4 style="color: var(--text-secondary); margin: 0 0 15px 0; text-align: center;">Top 10
+                                Suplier (Pembelian)</h4>
+                            <canvas id="supplierChart"></canvas>
+                        </div>
+                        <div class="chart-container"
+                            style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); height: 350px; position: relative;">
+                            <h4 style="color: var(--text-secondary); margin: 0 0 15px 0; text-align: center;">Top 10
+                                Pelanggan (Penjualan)</h4>
+                            <canvas id="customerChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Settings -->
+            <div id="settings-view" class="tab-view">
+                <header class="view-header">
+                    <h2>Pengaturan Aplikasi</h2>
+                </header>
+
+                <div class="settings-container" style="padding: 24px; max-width: 600px;">
+                    <section class="settings-card">
+                        <h3>Informasi Perusahaan (Kop Surat)</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-secondary);">Data ini akan ditampilkan pada
+                            cetakan Surat Jalan.</p>
+
+                        <div class="input-group">
+                            <label>Nama Perusahaan / Usaha</label>
+                            <input type="text" id="setting-company-name" placeholder="Contoh: UD. MAJU JAYA">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Alamat Lengkap</label>
+                            <textarea id="setting-company-address" rows="3"
+                                placeholder="Contoh: Jl. Raya No. 123, Kota Baru"
+                                style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; font-size: 1rem;"></textarea>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Nomor Telepon</label>
+                            <input type="text" id="setting-company-phone" placeholder="Contoh: 0812-3456-7890">
+                        </div>
+
+                        <div style="margin-top: 24px;">
+                            <button id="save-settings-btn" class="primary-btn">Simpan Pengaturan</button>
+                        </div>
+                    </section>
+
+                    <section class="settings-card" style="margin-top: 20px;">
+                        <h3>Manajemen Data</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-secondary);">Backup dan Restore database
+                            aplikasi.</p>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <button id="backup-db-btn" class="primary-btn secondary" style="flex: 1;">
+                                <img src="src/assets/img/icon-export.png" alt="Backup"
+                                    style="width: 16px; margin-right: 8px;">
+                                Backup Database
+                            </button>
+                            <button id="restore-db-btn" class="primary-btn secondary" style="flex: 1;">
+                                <img src="src/assets/img/icon-reload.png" alt="Restore"
+                                    style="width: 16px; margin-right: 8px;">
+                                Restore Database
+                            </button>
+                        </div>
+
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                            <button id="reset-db-btn" class="primary-btn delete"
+                                style="width: 100%; background-color: #ff4757; color: white;">
+                                <img src="src/assets/img/icon-delete.png" alt="Delete"
+                                    style="width: 16px; margin-right: 8px; filter: brightness(0) invert(1);"> Hapus
+                                Semua Data (Clear Data)
+                            </button>
+                            <button id="open-sql-btn" class="primary-btn secondary"
+                                style="width: 100%; margin-top: 10px; background-color: #555; color: white;">
+                                <img src="src/assets/img/icon-setting.svg" alt="SQL"
+                                    style="width: 16px; margin-right: 8px; filter: brightness(0) invert(1);"> SQL Query
+                                (Advanced)
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="settings-card" style="margin-top: 20px;">
+                        <h3>General</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-secondary);">Settingan General Aplikasi</p>
+                        <div class="input-group">
+                            <label>Tema Aplikasi</label>
+                            <select id="setting-app-theme">
+                                <option value="dark">Dark Mode (Default)</option>
+                                <option value="light">Light Mode</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 15px;">
+                            <label>URL Google Script (Integrasi Sheets)</label>
+                            <input type="text" id="setting-google-script-url"
+                                placeholder="https://script.google.com/macros/s/..." style="width: 100%;">
+                            <small style="color: var(--text-secondary); display: block; margin-top: 5px;">
+                                Kosongkan jika tidak ingin upload otomatis ke Google Sheet.
+                            </small>
+                        </div>
+                    </section>
+
+                    <section class="settings-card" style="margin-top: 20px;">
+                        <h3>Update Aplikasi</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-secondary);">Perbarui aplikasi ke versi
+                            terbaru.</p>
+
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="update-app-btn" class="primary-btn">
+                                <img src="src/assets/img/icon-reload.png" alt="Update"
+                                    style="width: 16px; margin-right: 8px;">
+                                Check for Update
+                            </button>
+                            <span id="update-status" style="font-size: 0.9rem; color: var(--text-secondary);"></span>
+                        </div>
+
+                        <div id="update-progress-container" style="display: none; margin-top: 15px;">
+                            <div
+                                style="width: 100%; height: 8px; background-color: var(--border-color); border-radius: 4px; overflow: hidden;">
+                                <div id="update-progress-bar"
+                                    style="width: 0%; height: 100%; background-color: var(--accent-color); transition: width 0.3s;">
+                                </div>
+                            </div>
+                            <small id="update-progress-text"
+                                style="display: block; margin-top: 5px; text-align: right;">0%</small>
+                        </div>
+                    </section>
+
+                    <section class="settings-card" style="margin-top: 20px;">
+                        <h3>Pengaturan Template Print</h3>
+                        <div class="input-group">
+                            <label>Design Layout</label>
+                            <div
+                                style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                                <label>Daftar Template</label>
+                                <button id="create-template-btn" class="primary-btn"
+                                    style="background: #007ACC; font-size: 0.8rem;">+ Buat Baru</button>
+                            </div>
+
+                            <div class="table-container"
+                                style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                                <table class="data-table" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>Nama Template</th>
+                                            <th style="width: 100px; text-align: center;">Status</th>
+                                            <th style="width: 150px; text-align: right;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="template-list-body">
+                                        <!-- Templates injected here -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <p style="margin-top: 10px; font-size: 0.8rem; color: #666;">
+                                Hanya template dengan status <b>AKTIF</b> yang akan digunakan saat mencetak Surat Jalan.
+                            </p>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Save Modal -->
+    <div id="save-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Simpan Rekaman Timbangan</h3>
+                <button id="close-modal-btn" class="close-btn">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="modal-tabs-mini">
+                    <button id="stage-1-btn" class="stage-btn active" data-stage="1">Timbang Pertama</button>
+                    <button id="stage-2-btn" class="stage-btn" data-stage="2">Timbang Kedua</button>
+                </div>
+
+                <div id="pending-selection-area" class="pending-area" style="display: none;">
+                    <label>Pilih Data Timbang Pertama</label>
+                    <select id="pending-weight-select" class="modal-select">
+                        <option value="">-- Pilih Rekaman --</option>
+                    </select>
+                </div>
+
+                <div class="modal-weight-preview-grid">
+                    <div class="modal-weight-preview">
+                        <span class="label">Berat Sekarang</span>
+                        <div class="value"><span id="modal-weight-display">0.00</span> kg</div>
+                    </div>
+                    <div id="first-weight-preview" class="modal-weight-preview secondary" style="display: none;">
+                        <span class="label">Berat Pertama</span>
+                        <div class="value"><span id="modal-first-weight-display">0.00</span> kg</div>
+                    </div>
+                    <div id="net-weight-preview" class="modal-weight-preview accent" style="display: none;">
+                        <span class="label">Berat Bersih</span>
+                        <div class="value"><span id="modal-net-weight-display">0.00</span> kg</div>
+                    </div>
+                </div>
+
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>Nama Supplier / Pelanggan</label>
+                        <input type="text" id="party-name" placeholder="Contoh: Budi Santoso">
+                    </div>
+                    <div class="input-group">
+                        <label>Jenis Barang</label>
+                        <input type="text" id="product-name" placeholder="Contoh: Jagung Basah">
+                    </div>
+                    <div class="input-group">
+                        <label>Jenis Transaksi</label>
+                        <select id="trx-type" class="modal-select">
+                            <option value="Pembelian">Pembelian</option>
+                            <option value="Penjualan">Penjualan</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Nomor Plat Kendaraan</label>
+                        <input type="text" id="plate-number" placeholder="Contoh: B 1234 ABC">
+                    </div>
+                    <div class="input-group">
+                        <label>Berat Surat Jalan (kg)</label>
+                        <input type="number" id="noted-weight" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="input-group" id="refaksi-group">
+                        <label>Refaksi (%)</label>
+                        <input type="number" id="input-refaksi" step="0.1" placeholder="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="cancel-save-btn" class="primary-btn secondary">Batal</button>
+                <button id="confirm-save-btn" class="primary-btn">Konfirmasi Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-card mini">
+            <div class="modal-header">
+                <h3>Otoritas Diperlukan</h3>
+                <button id="close-pass-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Masukkan Password</label>
+                    <input type="password" id="reset-password-input" placeholder="••••••••">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-pass-btn" class="primary-btn secondary">Batal</button>
+                <button id="submit-reset-btn" class="primary-btn">Proses</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- SQL Query Modal -->
+    <div id="sql-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 900px; width: 90%;">
+            <div class="modal-header">
+                <h3>Manual SQL Query Execution</h3>
+                <button id="close-sql-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 10px; font-size: 0.9rem;">
+                    PERINGATAN: Fitur ini untuk advanced user. Eksekusi query sembarangan dapat merusak database.
+                </p>
+                <div class="input-group">
+                    <label>SQL Query</label>
+                    <textarea id="sql-query-input" rows="5" placeholder="SELECT * FROM weights WHERE weight > 100..."
+                        style="width: 100%; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; border: 1px solid var(--border-color); border-radius: 8px; background: #1e1e1e; color: #eee;"></textarea>
+                </div>
+
+                <div style="margin-top: 10px; text-align: right;">
+                    <button id="execute-sql-btn" class="primary-btn">Execute Query</button>
+                </div>
+
+                <div class="query-result-container"
+                    style="margin-top: 20px; overflow-x: auto; max-height: 400px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <table class="query-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        <thead id="query-result-head" style="background: #333; color: white; position: sticky; top: 0;">
+                        </thead>
+                        <tbody id="query-result-body"></tbody>
+                    </table>
+                    <div id="query-status-msg" style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                        Hasil query akan muncul di sini.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./node_modules/chart.js/dist/chart.umd.js"></script>
+    <script src="renderer.js"></script>
+</body>
+
+</html>
