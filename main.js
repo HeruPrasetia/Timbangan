@@ -3,7 +3,7 @@ const ExcelJS = require('exceljs');
 const path = require('path');
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
-const Database = require('better-sqlite3');
+const db = require('./db');
 const fs = require('fs');
 const http = require('http'); // Required for HTTP download
 const https = require('https'); // Required for GSheet Sync
@@ -70,108 +70,12 @@ function createWindow() {
     });
 }
 
-// Database Initialization
-const dbPath = path.join(app.getPath('userData'), 'timbangan.db');
-const db = new Database(dbPath);
-db.pragma('busy_timeout = 5000');
-
-// Create table if not exists
-db.exec(`
-    CREATE TABLE IF NOT EXISTS weights (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        weight REAL NOT NULL,
-        unit TEXT NOT NULL,
-        price REAL DEFAULT 0,
-        noted_weight REAL DEFAULT 0,
-        diff_weight REAL DEFAULT 0,
-        plate_number TEXT,
-        party_name TEXT,
-        timestamp DATETIME DEFAULT (DATETIME('now', 'localtime')),
-        notes TEXT,
-        product_name TEXT
-    )
-`);
-
-// Migration function to add missing columns to existing database
-function migrateDatabase() {
-    const columns = db.prepare('PRAGMA table_info(weights)').all();
-    const columnNames = columns.map(c => c.name);
-    console.log('Current DB Columns:', columnNames);
-
-    const requiredColumns = [
-        { name: 'price', type: 'REAL DEFAULT 0' },
-        { name: 'noted_weight', type: 'REAL DEFAULT 0' },
-        { name: 'diff_weight', type: 'REAL DEFAULT 0' },
-        { name: 'plate_number', type: 'TEXT' },
-        { name: 'product_name', type: 'TEXT' },
-        { name: 'party_name', type: 'TEXT' },
-        { name: 'trx_type', type: 'TEXT DEFAULT "Pembelian"' },
-        { name: 'weight_1', type: 'REAL DEFAULT 0' },
-        { name: 'weight_2', type: 'REAL DEFAULT 0' },
-        { name: 'driver_name', type: 'TEXT' },
-        { name: 'doc_number', type: 'TEXT' },
-        { name: 'timestamp_1', type: 'DATETIME' },
-        { name: 'refaksi', type: 'float DEFAULT 0' },
-        { name: 'timestamp_2', type: 'DATETIME' },
-    ];
-
-    requiredColumns.forEach(col => {
-        if (!columnNames.includes(col.name)) {
-            console.log(`Migrating: Adding column ${col.name}`);
-            try {
-                db.prepare(`ALTER TABLE weights ADD COLUMN ${col.name} ${col.type}`).run();
-            } catch (err) {
-                console.error(`Migration error for ${col.name}:`, err.message);
-            }
-        }
-    });
-    // Check for new columns in print_templates
-    try {
-        const tplColumns = db.prepare("PRAGMA table_info(print_templates)").all();
-        const hasTrxType = tplColumns.some(c => c.name === 'trx_type');
-        if (!hasTrxType) {
-            console.log('Migrating: Adding column trx_type to print_templates');
-            db.prepare("ALTER TABLE print_templates ADD COLUMN trx_type TEXT DEFAULT 'Pembelian'").run();
-        }
-    } catch (e) {
-        console.error("Migration error print_templates:", e);
-    }
-}
-
-
-db.exec(`
-        CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )
-    `);
-
-// Create table for Print Templates (Drafts)
-db.exec(`
-        CREATE TABLE IF NOT EXISTS print_templates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            content TEXT,
-            is_active INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT (DATETIME('now', 'localtime'))
-        )
-    `);
-
-db.exec(`
-        CREATE TABLE IF NOT EXISTS dbsrecno (
-            id TEXT PRIMARY KEY,
-            recno INTEGER,
-            YYMM INTEGER
-        )
-    `);
-
-migrateDatabase();
-
 app.whenReady().then(() => {
     createWindow();
 
     app.on('activate', function () {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
+        db.initDatabase();
     });
 });
 
@@ -241,35 +145,6 @@ ipcMain.on('connect-port', (event, { path, baudRate }) => {
 });
 
 // Database IPC Handlers
-// Helper to generate DocNumber
-function generateDocNumber(DocType) {
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const currentYYMM = parseInt(`${year}${month}`);
-
-    // Check dbsrecno
-    const row = db.prepare(`SELECT * FROM dbsrecno WHERE id = '${DocType}'`).get();
-
-    let newRecNo = 1;
-
-    if (row) {
-        if (row.YYMM === currentYYMM) {
-            newRecNo = row.recno + 1;
-            db.prepare(`UPDATE dbsrecno SET recno = ? WHERE id = '${DocType}'`).run(newRecNo);
-        } else {
-            // New Month, reset to 1
-            newRecNo = 1;
-            db.prepare(`UPDATE dbsrecno SET recno = ?, YYMM = ? WHERE id = '${DocType}'`).run(newRecNo, currentYYMM);
-        }
-    } else {
-        // First time ever
-        db.prepare(`INSERT INTO dbsrecno (id, recno, YYMM) VALUES ('${DocType}', ?, ?)`).run(newRecNo, currentYYMM);
-    }
-
-    const seq = newRecNo.toString().padStart(4, '0');
-    return `${DocType}-${year}${month}${seq}`;
-}
 
 // Database IPC Handlers
 ipcMain.handle('save-weight', async (event, data) => {
@@ -295,7 +170,7 @@ ipcMain.handle('save-weight', async (event, data) => {
             driver_name: driver_name || '',
             refaksi: refaksi || 0,
             notes: notes || '',
-            doc_number: generateDocNumber(trx_type == 'Pembelian' ? 'PURCH' : 'SALES')
+            doc_number: db.db.generateDocNumber(trx_type == 'Pembelian' ? 'PURCH' : 'SALES')
         };
 
         if (id) {
