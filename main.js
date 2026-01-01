@@ -184,6 +184,14 @@ ipcMain.handle('list-ports', async () => {
     return await SerialPort.list();
 });
 
+ipcMain.handle('get-port-status', async () => {
+    return {
+        isConnected: currentPort ? currentPort.isOpen : false,
+        path: currentPort ? currentPort.path : null,
+        baudRate: currentPort ? currentPort.baudRate : null
+    };
+});
+
 let currentPort = null;
 
 ipcMain.on('connect-port', (event, { path, baudRate }) => {
@@ -895,11 +903,11 @@ ipcMain.handle('get-report-stats', async (event, { year, month }) => {
 
         if (year) {
             conditions.push("strftime('%Y', timestamp) = ?");
-            args.push(year);
+            args.push(String(year));
         }
         if (month) {
             conditions.push("strftime('%m', timestamp) = ?");
-            args.push(month);
+            args.push(String(month));
         }
 
         if (conditions.length > 0) {
@@ -927,14 +935,14 @@ ipcMain.handle('get-report-chart-data', async (event, { year, month }) => {
             selectLabel = "strftime('%d', timestamp) as label";
             conditions.push("strftime('%Y', timestamp) = ?");
             conditions.push("strftime('%m', timestamp) = ?");
-            args.push(year, month);
+            args.push(String(year), String(month));
         } else {
             // Monthly breakdown for specific year (or all time if year missing, but frontend handles defaults)
             groupBy = "strftime('%m', timestamp)";
             selectLabel = "strftime('%m', timestamp) as label";
             if (year) {
                 conditions.push("strftime('%Y', timestamp) = ?");
-                args.push(year);
+                args.push(String(year));
             }
         }
 
@@ -961,11 +969,11 @@ ipcMain.handle('get-report-party-stats', async (event, { year, month, type }) =>
 
         if (year) {
             conditions.push("strftime('%Y', timestamp) = ?");
-            args.push(year);
+            args.push(String(year));
         }
         if (month) {
             conditions.push("strftime('%m', timestamp) = ?");
-            args.push(month);
+            args.push(String(month));
         }
 
         if (type) {

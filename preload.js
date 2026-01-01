@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
     listPorts: () => ipcRenderer.invoke('list-ports'),
+    getPortStatus: () => ipcRenderer.invoke('get-port-status'),
     connectPort: (config) => ipcRenderer.send('connect-port', config),
     disconnectPort: () => ipcRenderer.send('disconnect-port'),
     onPortData: (callback) => {

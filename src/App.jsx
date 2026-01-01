@@ -23,6 +23,10 @@ function App() {
                     document.body.classList.remove('light-mode');
                 }
             }
+
+            // Sync connection status
+            const status = await window.electronAPI.getPortStatus();
+            setIsConnected(status.isConnected);
         };
         fetchInitialData();
 

@@ -27,6 +27,17 @@ const Timbangan = () => {
     useEffect(() => {
         refreshPorts();
 
+        // Restore connection status from backend
+        const checkConnection = async () => {
+            const status = await window.electronAPI.getPortStatus();
+            if (status.isConnected) {
+                setIsConnected(true);
+                setSelectedPort(status.path);
+                if (status.baudRate) setBaudRate(status.baudRate);
+            }
+        };
+        checkConnection();
+
         const unsubscribeData = window.electronAPI.onPortData((data) => {
             lastParsedTime.current = Date.now();
             updateDisplay(data);
