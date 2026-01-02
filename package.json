@@ -12,8 +12,8 @@
     "dev": "concurrently \"bun run dev-react\" \"wait-on http://localhost:5173 && bun run start\"",
     "dev-react": "vite",
     "build": "bun run build-react && bun run buildwin",
-    "build-react": "vite build",
-    "buildwin": "electron-builder build --win portable --x64",
+    "build-react": "vite build --outDir dist-react",
+    "buildwin": "electron-builder --win portable --x64",
     "buildmac": "electron-builder build --mac",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
@@ -78,6 +78,13 @@
     "win": {
       "target": "portable",
       "icon": "react/assets/Logo.png"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "HeruPrasetia",
+        "repo": "Timbangan"
+      }
+    ]
   }
 }

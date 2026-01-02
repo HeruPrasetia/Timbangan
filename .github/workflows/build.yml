@@ -7,10 +7,8 @@ on:
 jobs:
   release:
     runs-on: windows-latest
-    # --- TAMBAHKAN BAGIAN INI ---
     permissions:
       contents: write
-    # ----------------------------
 
     steps:
       - name: Checkout Code
@@ -20,9 +18,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm' # TAMBAHKAN INI: Biar build lebih ngebut
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci # GANTI INI: Lebih stabil untuk robot
 
       - name: Rebuild Native Modules
         run: npm run rebuild
@@ -31,7 +30,8 @@ jobs:
         run: npm run build-react
 
       - name: Build and Release Electron App
-        run: npm run buildwin -- --publish always
+        # Perbaikan argumen publish agar langsung dikenali electron-builder
+        run: npm run buildwin -- -p always 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

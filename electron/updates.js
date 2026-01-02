@@ -63,31 +63,47 @@ function setupUpdatesHandlers() {
             return;
         }
 
-        const appPath = process.execPath;
+        // Use PORTABLE_EXECUTABLE_FILE if running as portable, otherwise use default exe path
+        const targetPath = process.env.PORTABLE_EXECUTABLE_FILE || app.getPath('exe');
         const batPath = path.join(app.getPath('temp'), 'update_timbangan.bat');
+        const mainPid = process.pid;
 
-        const batContent = `
-@echo off
+        const batContent = `@echo off
+setlocal enabledelayedexpansion
+
+echo Waiting for application to exit...
+:wait_for_exit
+tasklist /FI "PID eq ${mainPid}" 2>NUL | find /I "${mainPid}">NUL
+if "%ERRORLEVEL%"=="0" (
+    timeout /t 1 /nobreak > NUL
+    goto wait_for_exit
+)
+
+:: a bit more delay to ensure all file locks are released
 timeout /t 2 /nobreak > NUL
 
-:: 1. Move current app to old
-move /Y "${appPath}" "${appPath}.old" > NUL 2>&1
+echo Replacing executable...
+:retry_move
+move /Y "${updateFilePath}" "${targetPath}"
+if errorlevel 1 (
+    echo Retrying...
+    timeout /t 2 /nobreak > NUL
+    goto retry_move
+)
 
-:: 2. Move new update to the application path
-move /Y "${updateFilePath}" "${appPath}"
-
-:: 3. Restart the application
-start "" "${appPath}"
+echo Starting new version...
+start "" "${targetPath}"
 
 :: Self-delete this script
 del "%~f0" & exit
-        `;
+`;
 
         try {
-            fs.writeFileSync(batPath, batContent);
+            fs.writeFileSync(batPath, batContent, 'utf8');
             const child = spawn('cmd.exe', ['/c', batPath], {
                 detached: true,
-                stdio: 'ignore'
+                stdio: 'ignore',
+                windowsHide: true
             });
             child.unref();
             app.quit();
