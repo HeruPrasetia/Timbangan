@@ -27,6 +27,7 @@ const Settings = () => {
     const [appTheme, setAppTheme] = useState('dark');
 
     const [templates, setTemplates] = useState([]);
+    const [appVersion, setAppVersion] = useState('...');
     const [updateStatus, setUpdateStatus] = useState('');
     const [updateProgress, setUpdateProgress] = useState(0);
     const [isUpdateReady, setIsUpdateReady] = useState(false);
@@ -44,6 +45,7 @@ const Settings = () => {
     useEffect(() => {
         loadSettings();
         loadTemplates();
+        window.electronAPI.getAppVersion().then(setAppVersion);
 
         const unsubscribeUpdateProgress = window.electronAPI.onUpdateProgress((percent) => {
             setUpdateProgress(percent);
@@ -218,11 +220,16 @@ const Settings = () => {
             return;
         }
 
-        setUpdateStatus('Checking for updates...');
+        setUpdateStatus('Downloading update...');
         try {
-            await window.electronAPI.downloadUpdate();
+            const success = await window.electronAPI.downloadUpdate();
+            if (success) {
+                // Fallback in case event is missed
+                setUpdateStatus('Update siap diinstal!');
+                setIsUpdateReady(true);
+            }
         } catch (error) {
-            setUpdateStatus('Gagal memeriksa update.');
+            setUpdateStatus('Gagal mengunduh update: ' + error);
         }
     };
 
@@ -393,7 +400,7 @@ const Settings = () => {
                 {/* Update Section */}
                 <section className="settings-card">
                     <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><RotateCw size={20} /> Update Aplikasi</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{updateStatus || 'Versi Saat Ini: 1.3.1'}</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{updateStatus || `Versi Saat Ini: ${appVersion}`}</p>
 
                     {updateProgress > 0 && updateProgress < 100 && (
                         <div style={{ height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>

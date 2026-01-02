@@ -5,9 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "concurrently \"npm run dev-react\" \"wait-on http://localhost:5173 && npm run start\"",
+    "dev": "concurrently \"bun run dev-react\" \"wait-on http://localhost:5173 && bun run start\"",
     "dev-react": "vite",
-    "build": "npm run build-react && npm run buildwin",
+    "build": "bun run build-react && bun run buildwin",
     "build-react": "vite build",
     "buildwin": "electron-builder build --win portable --x64",
     "buildmac": "electron-builder build --mac",
@@ -68,7 +68,8 @@
       "print_renderer.html",
       "react/assets/img/**/*",
       "electron/**/*",
-      "dist-react/**/*"
+      "dist-react/**/*",
+      "db.js"
     ],
     "win": {
       "target": "portable",

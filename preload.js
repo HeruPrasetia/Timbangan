@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     printSuratJalan: (data) => ipcRenderer.invoke('print-surat-jalan', data),
     getHistoryById: (id) => ipcRenderer.invoke('get-history-by-id', id),
     // Update API
+    getAppVersion: () => ipcRenderer.invoke('get-app-version'),
     downloadUpdate: () => ipcRenderer.invoke('download-update'),
     onUpdateProgress: (callback) => {
         const listener = (event, percent) => callback(percent);

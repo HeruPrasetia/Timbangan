@@ -7,6 +7,10 @@ const { spawn } = require('child_process');
 let updateFilePath = null;
 
 function setupUpdatesHandlers() {
+    ipcMain.handle('get-app-version', () => {
+        return app.getVersion();
+    });
+
     ipcMain.handle('download-update', async (event) => {
         return new Promise((resolve, reject) => {
             const url = 'http://iot.naylatools.com/timbangan.exe';
@@ -36,6 +40,7 @@ function setupUpdatesHandlers() {
                     file.close();
                     console.log('Download complete:', tempPath);
                     updateFilePath = tempPath;
+                    event.sender.send('update-downloaded', tempPath);
                     resolve(true);
                 });
             }).on('error', (err) => {
