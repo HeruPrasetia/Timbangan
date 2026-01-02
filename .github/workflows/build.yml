@@ -16,21 +16,27 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 20
 
       - name: Install Dependencies
-        run: bun install
+        run: npm install
 
       - name: Rebuild Native Modules
-        run: bun run rebuild
+        run: npm run rebuild
 
       - name: Build React Frontend
-        run: bun run build-react
+        run: npm run build-react
 
       - name: Build and Release Electron App
-        run: bun run buildwin
+        run: npm run buildwin -- --publish always
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Timbangan-EXE
+          path: dist/*.exe
