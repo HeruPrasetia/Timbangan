@@ -7,7 +7,7 @@ export default defineConfig(({ command }) => ({
     base: command === 'build' ? './' : '/',
     resolve: {
         alias: {
-            '@': path.resolve(__dirname, './src'),
+            '@': path.resolve(__dirname, './react'),
         },
     },
     build: {

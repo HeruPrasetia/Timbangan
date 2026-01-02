@@ -1,0 +1,155 @@
+const { ipcMain, dialog, app } = require('electron');
+const path = require('path');
+const ExcelJS = require('exceljs');
+const db = require('../db');
+
+function setupHistoryHandlers() {
+    ipcMain.handle('get-history', async (event, params) => {
+        try {
+            const { startDate, endDate, page = 1, pageSize = 10 } = params || {};
+            const offset = (page - 1) * pageSize;
+
+            let query = 'SELECT * FROM weights';
+            const conditions = [];
+            const args = [];
+
+            if (startDate && endDate) {
+                conditions.push('date(timestamp) BETWEEN ? AND ?');
+                args.push(startDate, endDate);
+            }
+
+            if (conditions.length > 0) {
+                query += ' WHERE ' + conditions.join(' AND ');
+            }
+
+            query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
+            args.push(pageSize, offset);
+
+            const stmt = db.prepare(query);
+            return stmt.all(...args);
+        } catch (error) {
+            console.error('DB Fetch Error:', error);
+            return [];
+        }
+    });
+
+    ipcMain.handle('get-history-count', async (event, params) => {
+        try {
+            const { startDate, endDate } = params || {};
+            let query = 'SELECT COUNT(*) as count FROM weights';
+            const conditions = [];
+            const args = [];
+
+            if (startDate && endDate) {
+                conditions.push('date(timestamp) BETWEEN ? AND ?');
+                args.push(startDate, endDate);
+            }
+
+            if (conditions.length > 0) {
+                query += ' WHERE ' + conditions.join(' AND ');
+            }
+
+            const stmt = db.prepare(query);
+            return stmt.get(...args).count;
+        } catch (error) {
+            console.error('DB Count Error:', error);
+            return 0;
+        }
+    });
+
+    ipcMain.handle('delete-history', async (event, id) => {
+        try {
+            db.prepare('DELETE FROM weights WHERE id = ?').run(id);
+            return true;
+        } catch (error) {
+            console.error('DB Delete Error:', error);
+            return false;
+        }
+    });
+
+    ipcMain.handle('get-history-by-id', async (event, id) => {
+        const row = db.prepare('SELECT * FROM weights WHERE id = ?').get(id);
+        return row;
+    });
+
+    ipcMain.handle('export-to-excel', async (event, params) => {
+        try {
+            const { startDate, endDate } = params || {};
+            let query = 'SELECT * FROM weights';
+            const conditions = [];
+            const args = [];
+
+            if (startDate && endDate) {
+                conditions.push('date(timestamp) BETWEEN ? AND ?');
+                args.push(startDate, endDate);
+            }
+
+            if (conditions.length > 0) {
+                query += ' WHERE ' + conditions.join(' AND ');
+            }
+
+            query += ' ORDER BY timestamp DESC';
+
+            const data = db.prepare(query).all(...args);
+
+            const { filePath } = await dialog.showSaveDialog({
+                title: 'Export Riwayat Timbangan',
+                defaultPath: path.join(app.getPath('downloads'), `Riwayat_Timbangan_${new Date().toISOString().split('T')[0]}.xlsx`),
+                filters: [{ name: 'Excel Files', extensions: ['xlsx'] }]
+            });
+
+            if (!filePath) return { success: false, cancelled: true };
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Riwayat Timbangan');
+
+            worksheet.columns = [
+                { header: 'ID', key: 'id', width: 10 },
+                { header: 'Waktu', key: 'timestamp', width: 25 },
+                { header: 'Supplier/Pelanggan', key: 'party_name', width: 25 },
+                { header: 'Jenis Barang', key: 'product_name', width: 20 },
+                { header: 'No Plat', key: 'plate_number', width: 15 },
+                { header: 'Jenis', key: 'trx_type', width: 15 },
+                { header: 'Timbang 1 (kg)', key: 'weight_1', width: 15 },
+                { header: 'Timbang 2 (kg)', key: 'weight_2', width: 15 },
+                { header: 'Berat Bersih (kg)', key: 'weight', width: 15 },
+                { header: 'Berat Nota (kg)', key: 'noted_weight', width: 15 },
+                { header: 'Selisih (kg)', key: 'diff_weight', width: 15 },
+                { header: 'Harga /kg', key: 'price', width: 15 }
+            ];
+
+            data.forEach(item => {
+                worksheet.addRow({
+                    id: item.id,
+                    timestamp: new Date(item.timestamp).toLocaleString('id-ID'),
+                    party_name: item.party_name || '-',
+                    product_name: item.product_name || '-',
+                    plate_number: item.plate_number || '-',
+                    trx_type: item.trx_type || 'Pembelian',
+                    weight_1: item.weight_1 || 0,
+                    weight_2: item.weight_2 || 0,
+                    weight: item.weight,
+                    noted_weight: item.noted_weight || 0,
+                    diff_weight: item.diff_weight || 0,
+                    price: item.price || 0
+                });
+            });
+
+            // Styling
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' }
+            };
+
+            await workbook.xlsx.writeFile(filePath);
+            return { success: true, filePath };
+        } catch (error) {
+            console.error('Excel Export Error:', error);
+            return { success: false, error: error.message };
+        }
+    });
+}
+
+module.exports = { setupHistoryHandlers };

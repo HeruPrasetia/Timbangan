@@ -45,7 +45,7 @@
     },
     "npmRebuild": true,
     "buildDependenciesFromSource": false,
-    "icon": "src/assets/Logo.png",
+    "icon": "react/assets/Logo.png",
     "asar": true,
     "asarUnpack": [
       "**/node_modules/better-sqlite3/**/*",
@@ -58,20 +58,21 @@
       "renderer.js",
       "style.css",
       "package.json",
-      "src/assets/Logo.png",
-      "src/assets/LogoPanjang.png",
+      "react/assets/Logo.png",
+      "react/assets/LogoPanjang.png",
       "surat_jalan.html",
       "splash.html",
       "designer.js",
       "designer.html",
       "designer.css",
       "print_renderer.html",
-      "src/assets/img/**/*",
+      "react/assets/img/**/*",
+      "electron/**/*",
       "dist-react/**/*"
     ],
     "win": {
       "target": "portable",
-      "icon": "src/assets/Logo.png"
+      "icon": "react/assets/Logo.png"
     }
   }
 }

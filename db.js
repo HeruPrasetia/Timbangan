@@ -132,3 +132,17 @@ function generateDocNumber(DocType) {
     const seq = newRecNo.toString().padStart(4, '0');
     return `${DocType}-${year}${month}${seq}`;
 }
+
+module.exports = {
+    db,
+    initDatabase,
+    migrateDatabase,
+    generateDocNumber,
+    // Helper to match how it's used in main.js
+    prepare: (sql) => db.prepare(sql),
+    transaction: (fn) => db.transaction(fn),
+    backup: (dest) => db.backup(dest),
+    close: () => db.close(),
+    // To support db.db.generateDocNumber if needed (though it's better to fix it in main.js)
+    get dbInstance() { return db; }
+};
