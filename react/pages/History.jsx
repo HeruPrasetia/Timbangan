@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Download, Printer, Trash2, ChevronLeft, ChevronRight, Package, Truck, Search } from 'lucide-react';
+import { Calendar, Download, Printer, Trash2, Edit, ChevronLeft, ChevronRight, Package, Truck, Search, X, Save } from 'lucide-react';
 
 const History = () => {
     const [history, setHistory] = useState([]);
@@ -11,6 +11,8 @@ const History = () => {
     const today = new Date().toLocaleDateString('sv-SE');
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
 
     useEffect(() => {
         loadHistory();
@@ -66,6 +68,38 @@ const History = () => {
         if (confirm('Hapus rekaman ini?')) {
             await window.electronAPI.deleteHistory(id);
             loadHistory();
+        }
+    };
+
+    const handleEdit = (item) => {
+        setEditingItem({ ...item });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            // Recalculate weight and diff if needed
+            const w1 = parseFloat(editingItem.weight_1) || 0;
+            const w2 = parseFloat(editingItem.weight_2) || 0;
+            const refaksi = parseFloat(editingItem.refaksi) || 0;
+            const newWeight = Math.abs(w1 - w2) - refaksi;
+
+            const updatedData = {
+                ...editingItem,
+                weight: newWeight,
+                diff_weight: newWeight - (parseFloat(editingItem.noted_weight) || 0)
+            };
+
+            const result = await window.electronAPI.updateHistory(updatedData);
+            if (result.success) {
+                setIsEditModalOpen(false);
+                loadHistory();
+            } else {
+                alert('Gagal mengupdate: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Update Error:', error);
         }
     };
 
@@ -166,6 +200,9 @@ const History = () => {
                                         </td>
                                         <td>
                                             <div style={{ display: 'flex', gap: '4px' }}>
+                                                <button className="icon-btn" onClick={() => handleEdit(item)} title="Edit">
+                                                    <Edit size={16} color="var(--accent-color)" />
+                                                </button>
                                                 <button className="icon-btn" onClick={() => handlePrint(item.id)} title="Cetak">
                                                     <Printer size={16} color="var(--accent-color)" />
                                                 </button>
@@ -201,6 +238,124 @@ const History = () => {
                     </button>
                 </div>
             </div>
+            {isEditModalOpen && editingItem && (
+                <div className="modal-overlay active">
+                    <div className="modal-card">
+                        <div className="modal-header">
+                            <h3>Edit History - {editingItem.doc_number}</h3>
+                            <button className="close-btn" onClick={() => setIsEditModalOpen(false)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdate}>
+                            <div className="modal-body">
+                                <div className="input-grid">
+                                    <div className="input-group">
+                                        <label>Nomor Plat Kendaraan</label>
+                                        <input
+                                            type="text"
+                                            value={editingItem.plate_number || ''}
+                                            onChange={(e) => setEditingItem({ ...editingItem, plate_number: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Nama Supplier / Pelanggan</label>
+                                        <input
+                                            type="text"
+                                            value={editingItem.party_name || ''}
+                                            onChange={(e) => setEditingItem({ ...editingItem, party_name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Jenis Barang</label>
+                                        <input
+                                            type="text"
+                                            value={editingItem.product_name || ''}
+                                            onChange={(e) => setEditingItem({ ...editingItem, product_name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Jenis Transaksi</label>
+                                        <select
+                                            value={editingItem.trx_type || 'Pembelian'}
+                                            onChange={(e) => setEditingItem({ ...editingItem, trx_type: e.target.value })}
+                                        >
+                                            <option value="Pembelian">Pembelian</option>
+                                            <option value="Penjualan">Penjualan</option>
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Nama Sopir</label>
+                                        <input
+                                            type="text"
+                                            value={editingItem.driver_name || ''}
+                                            onChange={(e) => setEditingItem({ ...editingItem, driver_name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Harga /kg</label>
+                                        <input
+                                            type="number"
+                                            value={editingItem.price || 0}
+                                            onChange={(e) => setEditingItem({ ...editingItem, price: parseFloat(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Refaksi (kg)</label>
+                                        <input
+                                            type="number"
+                                            value={editingItem.refaksi || 0}
+                                            onChange={(e) => setEditingItem({ ...editingItem, refaksi: parseFloat(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Berat Nota (kg)</label>
+                                        <input
+                                            type="number"
+                                            value={editingItem.noted_weight || 0}
+                                            onChange={(e) => setEditingItem({ ...editingItem, noted_weight: parseFloat(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Berat 1 (kg) - Locked</label>
+                                        <input
+                                            type="number"
+                                            value={editingItem.weight_1 || 0}
+                                            disabled
+                                            style={{ background: 'rgba(255,255,255,0.05)', opacity: 0.6 }}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Berat 2 (kg) - Locked</label>
+                                        <input
+                                            type="number"
+                                            value={editingItem.weight_2 || 0}
+                                            disabled
+                                            style={{ background: 'rgba(255,255,255,0.05)', opacity: 0.6 }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="input-group" style={{ marginTop: '24px' }}>
+                                    <label>Catatan</label>
+                                    <textarea
+                                        value={editingItem.notes || ''}
+                                        onChange={(e) => setEditingItem({ ...editingItem, notes: e.target.value })}
+                                        rows="3"
+                                    />
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="primary-btn secondary" onClick={() => setIsEditModalOpen(false)}>
+                                    Batal
+                                </button>
+                                <button type="submit" className="primary-btn">
+                                    <Save size={18} /> Simpan Perubahan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
