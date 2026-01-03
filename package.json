@@ -1,6 +1,6 @@
 {
   "name": "timbangan",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "Timbangan App",
   "main": "main.js",
   "repository": {
@@ -52,28 +52,26 @@
     "icon": "react/assets/Logo.png",
     "asar": true,
     "asarUnpack": [
-      "**/node_modules/better-sqlite3/**/*",
-      "**/node_modules/serialport/**/*"
+      "node_modules/better-sqlite3/build/Release/*.node",
+      "node_modules/better-sqlite3/lib/*.js",
+      "node_modules/serialport/**/*"
     ],
     "files": [
       "main.js",
       "preload.js",
       "index.html",
       "renderer.js",
-      "style.css",
       "package.json",
-      "react/assets/Logo.png",
-      "react/assets/LogoPanjang.png",
-      "surat_jalan.html",
+      "react/assets/**/*",
+      "electron/**/*",
+      "dist-react/**/*",
+      "db.js",
       "splash.html",
+      "surat_jalan.html",
       "designer.js",
       "designer.html",
       "designer.css",
-      "print_renderer.html",
-      "react/assets/img/**/*",
-      "electron/**/*",
-      "dist-react/**/*",
-      "db.js"
+      "print_renderer.html"
     ],
     "win": {
       "target": "portable",
