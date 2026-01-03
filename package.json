@@ -13,7 +13,7 @@
     "dev-react": "vite",
     "build": "bun run build-react && bun run buildwin",
     "build-react": "vite build --outDir dist-react",
-    "buildwin": "electron-builder --win portable --x64",
+    "buildwin": "electron-builder --win nsis --x64",
     "buildmac": "electron-builder build --mac",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
@@ -74,8 +74,14 @@
       "print_renderer.html"
     ],
     "win": {
-      "target": "portable",
+      "target": "nsis",
       "icon": "react/assets/Logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Timbangan"
     },
     "publish": [
       {
