@@ -1,6 +1,5 @@
 const { ipcMain, dialog, app } = require('electron');
 const path = require('path');
-const ExcelJS = require('exceljs');
 const db = require('../db');
 
 function setupHistoryHandlers() {
@@ -107,6 +106,9 @@ function setupHistoryHandlers() {
 
     ipcMain.handle('export-to-excel', async (event, params) => {
         try {
+            // Lazy load ExcelJS to speed up app startup
+            const ExcelJS = require('exceljs');
+
             const { startDate, endDate } = params || {};
             let query = 'SELECT * FROM weights';
             const conditions = [];

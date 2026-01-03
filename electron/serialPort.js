@@ -1,10 +1,17 @@
 const { ipcMain } = require('electron');
-const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
 
 let currentPort = null;
+let SerialPort = null;
+let ReadlineParser = null;
 
 function setupSerialPortHandlers() {
+    // Lazy load serialport dependencies
+    if (!SerialPort) {
+        const sp = require('serialport');
+        SerialPort = sp.SerialPort;
+        ReadlineParser = require('@serialport/parser-readline').ReadlineParser;
+    }
+
     ipcMain.handle('list-ports', async () => {
         return await SerialPort.list();
     });
