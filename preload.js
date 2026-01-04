@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveWeight: (data) => ipcRenderer.invoke('save-weight', data),
     getHistory: (params) => ipcRenderer.invoke('get-history', params),
     getHistoryCount: (params) => ipcRenderer.invoke('get-history-count', params),
+    getHistorySummary: (params) => ipcRenderer.invoke('get-history-summary', params),
     getPendingWeights: () => ipcRenderer.invoke('get-pending-weights'),
     deleteHistory: (id) => ipcRenderer.invoke('delete-history', id),
     updateHistory: (data) => ipcRenderer.invoke('update-history', data),

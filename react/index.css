@@ -491,6 +491,56 @@ textarea:focus {
     cursor: not-allowed;
 }
 
+.history-summary-bar {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 24px 32px;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--border-color);
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.summary-item .label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+}
+
+.summary-item .value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.summary-item .value.accent {
+    color: var(--accent-color);
+}
+
+.summary-item .value.positive {
+    color: var(--success-color);
+}
+
+.summary-item .value.negative {
+    color: var(--danger-color);
+}
+
+.summary-item .value small {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-left: 2px;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

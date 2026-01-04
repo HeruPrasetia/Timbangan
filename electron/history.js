@@ -66,6 +66,44 @@ function setupHistoryHandlers() {
         }
     });
 
+    ipcMain.handle('get-history-summary', async (event, params) => {
+        try {
+            const { startDate, endDate, search } = params || {};
+            let query = `
+                SELECT 
+                    SUM(weight) as totalWeight, 
+                    SUM(diff_weight) as totalDiff, 
+                    SUM(weight_1) as totalW1,
+                    SUM(weight_2) as totalW2,
+                    SUM(noted_weight) as totalNotedWeight,
+                    COUNT(*) as count 
+                FROM weights
+            `;
+            const conditions = [];
+            const args = [];
+
+            if (startDate && endDate) {
+                conditions.push('date(timestamp) BETWEEN ? AND ?');
+                args.push(startDate, endDate);
+            }
+
+            if (search) {
+                conditions.push('(party_name LIKE ? OR plate_number LIKE ? OR doc_number LIKE ?)');
+                args.push(`%${search}%`, `%${search}%`, `%${search}%`);
+            }
+
+            if (conditions.length > 0) {
+                query += ' WHERE ' + conditions.join(' AND ');
+            }
+
+            const stmt = db.prepare(query);
+            return stmt.get(...args);
+        } catch (error) {
+            console.error('DB Summary Error:', error);
+            return { totalWeight: 0, totalDiff: 0, totalW1: 0, totalW2: 0, totalNotedWeight: 0, count: 0 };
+        }
+    });
+
     ipcMain.handle('delete-history', async (event, id) => {
         try {
             db.prepare('DELETE FROM weights WHERE id = ?').run(id);

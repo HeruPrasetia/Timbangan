@@ -14,6 +14,7 @@ const History = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [summary, setSummary] = useState({ totalWeight: 0, totalDiff: 0, count: 0 });
 
     useEffect(() => {
         loadHistory();
@@ -32,8 +33,10 @@ const History = () => {
         try {
             const data = await window.electronAPI.getHistory(params);
             const count = await window.electronAPI.getHistoryCount(params);
+            const summ = await window.electronAPI.getHistorySummary(params);
             setHistory(data);
             setTotalPages(Math.ceil(count / pageSize) || 1);
+            setSummary(summ);
         } catch (error) {
             console.error('Failed to load history:', error);
         } finally {
@@ -166,6 +169,7 @@ const History = () => {
                             <tr>
                                 <th>Waktu</th>
                                 <th>Detail</th>
+                                <th>Berat Nota (kg)</th>
                                 <th>Berat (kg)</th>
                                 <th>Selisih</th>
                                 <th>Aksi</th>
@@ -203,6 +207,11 @@ const History = () => {
                                                     <Truck size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
                                                     {item.plate_number || 'No Plate'}
                                                 </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                {Math.round(item.noted_weight || 0)}
                                             </div>
                                         </td>
                                         <td>
@@ -256,6 +265,35 @@ const History = () => {
                     >
                         <ChevronRight size={16} />
                     </button>
+                </div>
+
+                <div className="history-summary-bar">
+                    <div className="summary-item">
+                        <span className="label">Total Baris</span>
+                        <span className="value">{summary.count || 0}</span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total W1</span>
+                        <span className="value">{(summary.totalW1 || 0).toLocaleString('id-ID')} <small>kg</small></span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total W2</span>
+                        <span className="value">{(summary.totalW2 || 0).toLocaleString('id-ID')} <small>kg</small></span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total Berat (Netto)</span>
+                        <span className="value accent">{(summary.totalWeight || 0).toLocaleString('id-ID')} <small>kg</small></span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total Berat Nota</span>
+                        <span className="value">{(summary.totalNotedWeight || 0).toLocaleString('id-ID')} <small>kg</small></span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total Selisih</span>
+                        <span className={`value ${summary.totalDiff > 0 ? 'positive' : summary.totalDiff < 0 ? 'negative' : ''}`}>
+                            {summary.totalDiff > 0 ? '+' : ''}{(summary.totalDiff || 0).toLocaleString('id-ID')} <small>kg</small>
+                        </span>
+                    </div>
                 </div>
             </div>
             {
