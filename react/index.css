@@ -731,6 +731,27 @@ input {
     transition: all 0.2s;
 }
 
+.modal-search-input {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    margin-bottom: 4px;
+}
+
+.modal-search-input:focus {
+    border-color: var(--accent-color);
+    border-style: solid;
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.searchable-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .modal-tabs-mini {
     display: flex;
     gap: 12px;

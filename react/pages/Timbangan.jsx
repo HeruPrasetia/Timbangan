@@ -21,6 +21,7 @@ const Timbangan = () => {
     const [pendingRecords, setPendingRecords] = useState([]);
     const [selectedPendingId, setSelectedPendingId] = useState('');
     const [selectedPendingData, setSelectedPendingData] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const lastParsedTime = useRef(0);
 
@@ -127,6 +128,7 @@ const Timbangan = () => {
 
     const handleStageChange = async (stage) => {
         setCurrentStage(stage);
+        setSearchTerm('');
         if (stage === 2) {
             const pending = await window.electronAPI.getPendingWeights();
             setPendingRecords(pending);
@@ -320,18 +322,39 @@ const Timbangan = () => {
                             {currentStage === 2 && (
                                 <div className="pending-area">
                                     <label>Pilih Data Timbang Pertama</label>
-                                    <select
-                                        className="modal-select"
-                                        value={selectedPendingId}
-                                        onChange={handlePendingSelect}
-                                    >
-                                        <option value="">-- Pilih Rekaman --</option>
-                                        {pendingRecords.map(r => (
-                                            <option key={r.id} value={r.id}>
-                                                {r.doc_number} - 🚚 {r.plate_number} - {r.product_name} ({Math.round(r.weight_1)} kg)
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="searchable-group">
+                                        <input
+                                            type="text"
+                                            className="modal-search-input"
+                                            placeholder="Cari Plat / Doc / Pelanggan..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                        <select
+                                            className="modal-select"
+                                            value={selectedPendingId}
+                                            onChange={handlePendingSelect}
+                                        >
+                                            <option value="">-- {pendingRecords.filter(r =>
+                                                r.doc_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                r.plate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                r.party_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                (r.product_name && r.product_name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                            ).length} Rekaman Ditemukan --</option>
+                                            {pendingRecords
+                                                .filter(r =>
+                                                    r.doc_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                    r.plate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                    r.party_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                    (r.product_name && r.product_name.toLowerCase().includes(searchTerm.toLowerCase()))
+                                                )
+                                                .map(r => (
+                                                    <option key={r.id} value={r.id}>
+                                                        {r.doc_number} - 🚚 {r.plate_number} - {r.product_name} ({Math.round(r.weight_1)} kg)
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
                                 </div>
                             )}
 

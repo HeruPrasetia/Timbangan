@@ -7,7 +7,9 @@ import {
     Title,
     Tooltip,
     Legend,
-    ArcElement
+    ArcElement,
+    BarController,
+    DoughnutController
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { RefreshCw, TrendingUp, Users, ShoppingCart } from 'lucide-react';
@@ -19,7 +21,9 @@ ChartJS.register(
     Title,
     Tooltip,
     Legend,
-    ArcElement
+    ArcElement,
+    BarController,
+    DoughnutController
 );
 
 const Laporan = () => {
@@ -126,6 +130,7 @@ const Laporan = () => {
     };
 
     const processPartyData = (data, setter) => {
+        console.log(data);
         if (!Array.isArray(data)) {
             console.warn('ProcessPartyData: Data is not an array', data);
             return;
@@ -133,7 +138,7 @@ const Laporan = () => {
         setter({
             labels: data.map(d => d.party_name || 'Unknown'),
             datasets: [{
-                data: data.map(d => d.totalWeight || 0),
+                data: data.map(d => d.totalWeightNet || 0),
                 backgroundColor: [
                     '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
                     '#C9CBCF', '#4D5360', '#82ca9d', '#8884d8'

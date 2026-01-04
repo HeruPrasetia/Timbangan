@@ -1,6 +1,6 @@
 {
   "name": "timbangan",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Timbangan App",
   "main": "main.js",
   "repository": {
@@ -13,7 +13,7 @@
     "dev-react": "vite",
     "build": "bun run build-react && bun run buildwin",
     "build-react": "vite build --outDir dist-react",
-    "buildwin": "electron-builder --win nsis --x64",
+    "buildwin": "electron-builder --win portable --x64",
     "buildmac": "electron-builder build --mac",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },

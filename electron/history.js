@@ -21,7 +21,7 @@ function setupHistoryHandlers() {
                 query += ' WHERE ' + conditions.join(' AND ');
             }
 
-            query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
+            query += ' ORDER BY id DESC LIMIT ? OFFSET ?';
             args.push(pageSize, offset);
 
             const stmt = db.prepare(query);

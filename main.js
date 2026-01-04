@@ -78,10 +78,12 @@ function createMainWindow() {
         setupReportsHandlers();
         setupUpdatesHandlers();
 
-        if (splashWindow && !splashWindow.isDestroyed()) {
-            splashWindow.close();
-        }
-        mainWindow.show();
+        setTimeout(() => {
+            if (splashWindow && !splashWindow.isDestroyed()) {
+                splashWindow.close();
+            }
+            mainWindow.show();
+        }, 2000);
     });
 }
 
