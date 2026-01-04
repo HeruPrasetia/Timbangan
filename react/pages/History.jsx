@@ -11,6 +11,7 @@ const History = () => {
     const today = new Date().toLocaleDateString('sv-SE');
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
+    const [searchQuery, setSearchQuery] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
 
@@ -23,6 +24,7 @@ const History = () => {
         const params = {
             startDate,
             endDate,
+            search: searchQuery,
             page: currentPage,
             pageSize
         };
@@ -45,7 +47,7 @@ const History = () => {
     };
 
     const handleExport = async () => {
-        const params = { startDate, endDate };
+        const params = { startDate, endDate, search: searchQuery };
         const result = await window.electronAPI.exportToExcel(params);
         if (result.success) {
             alert('Data berhasil dieksport ke: ' + result.filePath);
@@ -130,9 +132,27 @@ const History = () => {
                             onChange={(e) => setEndDate(e.target.value)}
                         />
                     </div>
-                    <button className="icon-btn" title="Filter History" onClick={handleFilter}>
-                        <Search size={18} color="var(--text-primary)" />
+
+                    <div className="search-box">
+                        <Search size={16} className="search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Cari Nama / No Plat / No Dokumen..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
+                        />
+                        {searchQuery && (
+                            <button className="clear-search" onClick={() => { setSearchQuery(''); setCurrentPage(1); loadHistory(); }}>
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+
+                    <button className="primary-btn" onClick={handleFilter} style={{ width: 'auto', padding: '6px 20px', height: '36px' }}>
+                        Filter
                     </button>
+
                     <button className="icon-btn excel-btn" title="Export ke Excel" onClick={handleExport}>
                         <Download size={18} color="var(--text-primary)" />
                     </button>
@@ -238,125 +258,127 @@ const History = () => {
                     </button>
                 </div>
             </div>
-            {isEditModalOpen && editingItem && (
-                <div className="modal-overlay active">
-                    <div className="modal-card">
-                        <div className="modal-header">
-                            <h3>Edit History - {editingItem.doc_number}</h3>
-                            <button className="close-btn" onClick={() => setIsEditModalOpen(false)}>
-                                <X size={20} />
-                            </button>
+            {
+                isEditModalOpen && editingItem && (
+                    <div className="modal-overlay active">
+                        <div className="modal-card">
+                            <div className="modal-header">
+                                <h3>Edit History - {editingItem.doc_number}</h3>
+                                <button className="close-btn" onClick={() => setIsEditModalOpen(false)}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <form onSubmit={handleUpdate}>
+                                <div className="modal-body">
+                                    <div className="input-grid">
+                                        <div className="input-group">
+                                            <label>Nomor Plat Kendaraan</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.plate_number || ''}
+                                                onChange={(e) => setEditingItem({ ...editingItem, plate_number: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Nama Supplier / Pelanggan</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.party_name || ''}
+                                                onChange={(e) => setEditingItem({ ...editingItem, party_name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Jenis Barang</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.product_name || ''}
+                                                onChange={(e) => setEditingItem({ ...editingItem, product_name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Jenis Transaksi</label>
+                                            <select
+                                                value={editingItem.trx_type || 'Pembelian'}
+                                                onChange={(e) => setEditingItem({ ...editingItem, trx_type: e.target.value })}
+                                            >
+                                                <option value="Pembelian">Pembelian</option>
+                                                <option value="Penjualan">Penjualan</option>
+                                            </select>
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Nama Sopir</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.driver_name || ''}
+                                                onChange={(e) => setEditingItem({ ...editingItem, driver_name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Harga /kg</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.price || 0}
+                                                onChange={(e) => setEditingItem({ ...editingItem, price: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Refaksi (kg)</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.refaksi || 0}
+                                                onChange={(e) => setEditingItem({ ...editingItem, refaksi: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Berat Nota (kg)</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.noted_weight || 0}
+                                                onChange={(e) => setEditingItem({ ...editingItem, noted_weight: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Berat 1 (kg) - Locked</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.weight_1 || 0}
+                                                disabled
+                                                style={{ background: 'rgba(255,255,255,0.05)', opacity: 0.6 }}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Berat 2 (kg) - Locked</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.weight_2 || 0}
+                                                disabled
+                                                style={{ background: 'rgba(255,255,255,0.05)', opacity: 0.6 }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="input-group" style={{ marginTop: '24px' }}>
+                                        <label>Catatan</label>
+                                        <textarea
+                                            value={editingItem.notes || ''}
+                                            onChange={(e) => setEditingItem({ ...editingItem, notes: e.target.value })}
+                                            rows="3"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="button" className="primary-btn secondary" onClick={() => setIsEditModalOpen(false)}>
+                                        Batal
+                                    </button>
+                                    <button type="submit" className="primary-btn">
+                                        <Save size={18} /> Simpan Perubahan
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <form onSubmit={handleUpdate}>
-                            <div className="modal-body">
-                                <div className="input-grid">
-                                    <div className="input-group">
-                                        <label>Nomor Plat Kendaraan</label>
-                                        <input
-                                            type="text"
-                                            value={editingItem.plate_number || ''}
-                                            onChange={(e) => setEditingItem({ ...editingItem, plate_number: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Nama Supplier / Pelanggan</label>
-                                        <input
-                                            type="text"
-                                            value={editingItem.party_name || ''}
-                                            onChange={(e) => setEditingItem({ ...editingItem, party_name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Jenis Barang</label>
-                                        <input
-                                            type="text"
-                                            value={editingItem.product_name || ''}
-                                            onChange={(e) => setEditingItem({ ...editingItem, product_name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Jenis Transaksi</label>
-                                        <select
-                                            value={editingItem.trx_type || 'Pembelian'}
-                                            onChange={(e) => setEditingItem({ ...editingItem, trx_type: e.target.value })}
-                                        >
-                                            <option value="Pembelian">Pembelian</option>
-                                            <option value="Penjualan">Penjualan</option>
-                                        </select>
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Nama Sopir</label>
-                                        <input
-                                            type="text"
-                                            value={editingItem.driver_name || ''}
-                                            onChange={(e) => setEditingItem({ ...editingItem, driver_name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Harga /kg</label>
-                                        <input
-                                            type="number"
-                                            value={editingItem.price || 0}
-                                            onChange={(e) => setEditingItem({ ...editingItem, price: parseFloat(e.target.value) })}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Refaksi (kg)</label>
-                                        <input
-                                            type="number"
-                                            value={editingItem.refaksi || 0}
-                                            onChange={(e) => setEditingItem({ ...editingItem, refaksi: parseFloat(e.target.value) })}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Berat Nota (kg)</label>
-                                        <input
-                                            type="number"
-                                            value={editingItem.noted_weight || 0}
-                                            onChange={(e) => setEditingItem({ ...editingItem, noted_weight: parseFloat(e.target.value) })}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Berat 1 (kg) - Locked</label>
-                                        <input
-                                            type="number"
-                                            value={editingItem.weight_1 || 0}
-                                            disabled
-                                            style={{ background: 'rgba(255,255,255,0.05)', opacity: 0.6 }}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Berat 2 (kg) - Locked</label>
-                                        <input
-                                            type="number"
-                                            value={editingItem.weight_2 || 0}
-                                            disabled
-                                            style={{ background: 'rgba(255,255,255,0.05)', opacity: 0.6 }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="input-group" style={{ marginTop: '24px' }}>
-                                    <label>Catatan</label>
-                                    <textarea
-                                        value={editingItem.notes || ''}
-                                        onChange={(e) => setEditingItem({ ...editingItem, notes: e.target.value })}
-                                        rows="3"
-                                    />
-                                </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="primary-btn secondary" onClick={() => setIsEditModalOpen(false)}>
-                                    Batal
-                                </button>
-                                <button type="submit" className="primary-btn">
-                                    <Save size={18} /> Simpan Perubahan
-                                </button>
-                            </div>
-                        </form>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

@@ -12,7 +12,7 @@ import {
     DoughnutController
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { RefreshCw, TrendingUp, Users, ShoppingCart } from 'lucide-react';
+import { RefreshCw, TrendingUp, Users, ShoppingCart, Package } from 'lucide-react';
 
 ChartJS.register(
     CategoryScale,
@@ -34,6 +34,8 @@ const Laporan = () => {
     const [chartData, setChartData] = useState(null);
     const [supplierData, setSupplierData] = useState(null);
     const [customerData, setCustomerData] = useState(null);
+    const [productPembelianData, setProductPembelianData] = useState(null);
+    const [productPenjualanData, setProductPenjualanData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -81,6 +83,13 @@ const Laporan = () => {
             const customers = await window.electronAPI.getReportPartyStats({ ...params, type: 'Penjualan' });
             console.log('Customers data received:', customers);
             processPartyData(customers || [], setCustomerData);
+
+            // 4. Fetch Product Stats
+            const productsIn = await window.electronAPI.getReportProductStats({ ...params, type: 'Pembelian' });
+            processProductData(productsIn || [], setProductPembelianData, 'rgba(76, 175, 80, 0.6)', '#4CAF50');
+
+            const productsOut = await window.electronAPI.getReportProductStats({ ...params, type: 'Penjualan' });
+            processProductData(productsOut || [], setProductPenjualanData, 'rgba(233, 30, 99, 0.6)', '#E91E63');
 
         } catch (error) {
             console.error('Failed to load report data:', error);
@@ -144,6 +153,21 @@ const Laporan = () => {
                     '#C9CBCF', '#4D5360', '#82ca9d', '#8884d8'
                 ],
                 borderWidth: 0,
+            }]
+        });
+    };
+
+    const processProductData = (data, setter, bgColor, borderColor) => {
+        if (!Array.isArray(data)) return;
+        setter({
+            labels: data.map(d => d.product_name || 'Unknown'),
+            datasets: [{
+                label: 'Total Berat (kg)',
+                data: data.map(d => d.totalWeightNet || 0),
+                backgroundColor: bgColor,
+                borderColor: borderColor,
+                borderWidth: 1,
+                borderRadius: 8,
             }]
         });
     };
@@ -237,6 +261,26 @@ const Laporan = () => {
                         </h4>
                         <div style={{ flex: 1, minHeight: 0 }}>
                             {customerData && <Doughnut data={customerData} options={donutOptions} />}
+                        </div>
+                    </section>
+                </div>
+
+                {/* Top Products Section */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+                    <section className="settings-card" style={{ padding: '24px', height: '450px' }}>
+                        <h4 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
+                            <Package size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Top 10 Barang (Pembelian)
+                        </h4>
+                        <div style={{ flex: 1, minHeight: 0 }}>
+                            {productPembelianData && <Bar data={productPembelianData} options={{ ...chartOptions, indexAxis: 'y' }} />}
+                        </div>
+                    </section>
+                    <section className="settings-card" style={{ padding: '24px', height: '450px' }}>
+                        <h4 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
+                            <Package size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Top 10 Barang (Penjualan)
+                        </h4>
+                        <div style={{ flex: 1, minHeight: 0 }}>
+                            {productPenjualanData && <Bar data={productPenjualanData} options={{ ...chartOptions, indexAxis: 'y' }} />}
                         </div>
                     </section>
                 </div>

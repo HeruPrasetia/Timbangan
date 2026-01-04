@@ -5,7 +5,7 @@ const db = require('../db');
 function setupHistoryHandlers() {
     ipcMain.handle('get-history', async (event, params) => {
         try {
-            const { startDate, endDate, page = 1, pageSize = 10 } = params || {};
+            const { startDate, endDate, search, page = 1, pageSize = 10 } = params || {};
             const offset = (page - 1) * pageSize;
 
             let query = 'SELECT * FROM weights';
@@ -15,6 +15,11 @@ function setupHistoryHandlers() {
             if (startDate && endDate) {
                 conditions.push('date(timestamp) BETWEEN ? AND ?');
                 args.push(startDate, endDate);
+            }
+
+            if (search) {
+                conditions.push('(party_name LIKE ? OR plate_number LIKE ? OR doc_number LIKE ?)');
+                args.push(`%${search}%`, `%${search}%`, `%${search}%`);
             }
 
             if (conditions.length > 0) {
@@ -34,7 +39,7 @@ function setupHistoryHandlers() {
 
     ipcMain.handle('get-history-count', async (event, params) => {
         try {
-            const { startDate, endDate } = params || {};
+            const { startDate, endDate, search } = params || {};
             let query = 'SELECT COUNT(*) as count FROM weights';
             const conditions = [];
             const args = [];
@@ -42,6 +47,11 @@ function setupHistoryHandlers() {
             if (startDate && endDate) {
                 conditions.push('date(timestamp) BETWEEN ? AND ?');
                 args.push(startDate, endDate);
+            }
+
+            if (search) {
+                conditions.push('(party_name LIKE ? OR plate_number LIKE ? OR doc_number LIKE ?)');
+                args.push(`%${search}%`, `%${search}%`, `%${search}%`);
             }
 
             if (conditions.length > 0) {

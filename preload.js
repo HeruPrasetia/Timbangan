@@ -70,6 +70,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getReportStats: (params) => ipcRenderer.invoke('get-report-stats', params),
     getReportChartData: (params) => ipcRenderer.invoke('get-report-chart-data', params),
     getReportPartyStats: (params) => ipcRenderer.invoke('get-report-party-stats', params),
+    getReportProductStats: (params) => ipcRenderer.invoke('get-report-product-stats', params),
 
     // Print Designer & Multi-Template
     openReportDesigner: (templateId) => ipcRenderer.invoke('open-report-designer', templateId),

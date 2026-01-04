@@ -106,6 +106,46 @@ function setupReportsHandlers() {
             return [];
         }
     });
+
+    ipcMain.handle('get-report-product-stats', async (event, { year, month, type }) => {
+        try {
+            const conditions = [];
+            const args = [];
+
+            if (year) {
+                conditions.push("strftime('%Y', timestamp) = ?");
+                args.push(String(year));
+            }
+            if (month) {
+                conditions.push("strftime('%m', timestamp) = ?");
+                args.push(String(month));
+            }
+            if (type) {
+                conditions.push("trx_type = ?");
+                args.push(type);
+            }
+
+            let query = `
+                SELECT 
+                    product_name, 
+                    COUNT(*) as totalTransactions, 
+                    SUM(weight) as totalWeightNet
+                FROM weights
+            `;
+
+            if (conditions.length > 0) {
+                query += ' WHERE ' + conditions.join(' AND ');
+            }
+
+            query += ' GROUP BY product_name ORDER BY totalWeightNet DESC LIMIT 10';
+
+            const rows = db.prepare(query).all(...args);
+            return rows;
+        } catch (error) {
+            console.error('Report Product Stats Error:', error);
+            return [];
+        }
+    });
 }
 
 module.exports = { setupReportsHandlers };
