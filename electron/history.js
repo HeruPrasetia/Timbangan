@@ -184,47 +184,55 @@ function setupHistoryHandlers() {
             if (!filePath) return { success: false, cancelled: true };
 
             const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Riwayat Timbangan');
 
-            worksheet.columns = [
-                { header: 'ID', key: 'id', width: 10 },
-                { header: 'Waktu', key: 'timestamp', width: 25 },
-                { header: 'Supplier/Pelanggan', key: 'party_name', width: 25 },
-                { header: 'Jenis Barang', key: 'product_name', width: 20 },
-                { header: 'No Plat', key: 'plate_number', width: 15 },
-                { header: 'Jenis', key: 'trx_type', width: 15 },
-                { header: 'Timbang 1 (kg)', key: 'weight_1', width: 15 },
-                { header: 'Timbang 2 (kg)', key: 'weight_2', width: 15 },
-                { header: 'Berat Bersih (kg)', key: 'weight', width: 15 },
-                { header: 'Berat Nota (kg)', key: 'noted_weight', width: 15 },
-                { header: 'Selisih (kg)', key: 'diff_weight', width: 15 },
-                { header: 'Harga /kg', key: 'price', width: 15 }
-            ];
+            const setupSheet = (name, filteredData) => {
+                const worksheet = workbook.addWorksheet(name);
+                worksheet.columns = [
+                    { header: 'ID', key: 'id', width: 10 },
+                    { header: 'Waktu', key: 'timestamp', width: 25 },
+                    { header: 'Supplier/Pelanggan', key: 'party_name', width: 25 },
+                    { header: 'Jenis Barang', key: 'product_name', width: 20 },
+                    { header: 'No Plat', key: 'plate_number', width: 15 },
+                    { header: 'Jenis', key: 'trx_type', width: 15 },
+                    { header: 'Timbang 1 (kg)', key: 'weight_1', width: 15 },
+                    { header: 'Timbang 2 (kg)', key: 'weight_2', width: 15 },
+                    { header: 'Berat Bersih (kg)', key: 'weight', width: 15 },
+                    { header: 'Berat Nota (kg)', key: 'noted_weight', width: 15 },
+                    { header: 'Selisih (kg)', key: 'diff_weight', width: 15 },
+                    { header: 'Harga /kg', key: 'price', width: 15 }
+                ];
 
-            data.forEach(item => {
-                worksheet.addRow({
-                    id: item.id,
-                    timestamp: new Date(item.timestamp).toLocaleString('id-ID'),
-                    party_name: item.party_name || '-',
-                    product_name: item.product_name || '-',
-                    plate_number: item.plate_number || '-',
-                    trx_type: item.trx_type || 'Pembelian',
-                    weight_1: item.weight_1 || 0,
-                    weight_2: item.weight_2 || 0,
-                    weight: item.weight,
-                    noted_weight: item.noted_weight || 0,
-                    diff_weight: item.diff_weight || 0,
-                    price: item.price || 0
+                filteredData.forEach(item => {
+                    worksheet.addRow({
+                        id: item.id,
+                        timestamp: new Date(item.timestamp).toLocaleString('id-ID'),
+                        party_name: item.party_name || '-',
+                        product_name: item.product_name || '-',
+                        plate_number: item.plate_number || '-',
+                        trx_type: item.trx_type || 'Pembelian',
+                        weight_1: item.weight_1 || 0,
+                        weight_2: item.weight_2 || 0,
+                        weight: item.weight,
+                        noted_weight: item.noted_weight || 0,
+                        diff_weight: item.diff_weight || 0,
+                        price: item.price || 0
+                    });
                 });
-            });
 
-            // Styling
-            worksheet.getRow(1).font = { bold: true };
-            worksheet.getRow(1).fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFE0E0E0' }
+                // Styling
+                worksheet.getRow(1).font = { bold: true };
+                worksheet.getRow(1).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFE0E0E0' }
+                };
             };
+
+            const pembelianData = data.filter(d => (d.trx_type || 'Pembelian') === 'Pembelian');
+            const penjualanData = data.filter(d => d.trx_type === 'Penjualan');
+
+            setupSheet('Pembelian', pembelianData);
+            setupSheet('Penjualan', penjualanData);
 
             await workbook.xlsx.writeFile(filePath);
             return { success: true, filePath };
