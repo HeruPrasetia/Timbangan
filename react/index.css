@@ -125,27 +125,6 @@ body {
     display: none;
 }
 
-/* Specific Icons via Mask */
-.nav-item[data-tab="dashboard-view"] .nav-icon {
-    -webkit-mask-image: url('./assets/img/icon-dashboard.svg');
-    mask-image: url('./assets/img/icon-dashboard.svg');
-}
-
-.nav-item[data-tab="history-view"] .nav-icon {
-    -webkit-mask-image: url('./assets/img/icon-data.svg');
-    mask-image: url('./assets/img/icon-data.svg');
-}
-
-.nav-item[data-tab="settings-view"] .nav-icon {
-    -webkit-mask-image: url('./assets/img/icon-setting.svg');
-    mask-image: url('./assets/img/icon-setting.svg');
-}
-
-.nav-item[data-tab="reports-view"] .nav-icon {
-    -webkit-mask-image: url('./assets/img/icon-laporan.svg');
-    mask-image: url('./assets/img/icon-laporan.svg');
-}
-
 .sidebar-footer {
     padding: 24px;
     border-top: 1px solid var(--border-color);

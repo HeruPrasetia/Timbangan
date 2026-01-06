@@ -1,6 +1,6 @@
 {
   "name": "timbangan",
-  "version": "2.1.1",
+  "version": "3.0.2",
   "description": "Timbangan App",
   "main": "main.js",
   "repository": {
@@ -13,7 +13,7 @@
     "dev-react": "vite",
     "build": "bun run build-react && bun run buildwin",
     "build-react": "vite build --outDir dist-react",
-    "buildwin": "electron-builder --win portable --x64",
+    "buildwin": "electron-builder --win nsis --x64",
     "buildmac": "electron-builder build --mac",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
@@ -73,6 +73,16 @@
       "designer.css",
       "print_renderer.html"
     ],
+    "win": {
+      "target": "nsis",
+      "icon": "react/assets/Logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Timbangan"
+    },
     "publish": [
       {
         "provider": "github",
