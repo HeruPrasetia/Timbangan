@@ -22,6 +22,8 @@ const Timbangan = () => {
     const [selectedPendingId, setSelectedPendingId] = useState('');
     const [selectedPendingData, setSelectedPendingData] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [partyList, setPartyList] = useState([]);
+    const [showPartyLookup, setShowPartyLookup] = useState(false);
 
     const lastParsedTime = useRef(0);
 
@@ -111,6 +113,18 @@ const Timbangan = () => {
         }
     };
 
+    const fetchPartyList = async () => {
+        try {
+            const query = `SELECT party_name FROM weights WHERE party_name IS NOT NULL AND party_name != '' GROUP BY party_name ORDER BY party_name ASC`;
+            const result = await window.electronAPI.executeSql(query);
+            if (result.success) {
+                setPartyList(result.data.map(r => r.party_name));
+            }
+        } catch (error) {
+            console.error('Failed to fetch party list:', error);
+        }
+    };
+
     const openSaveModal = () => {
         // Reset Modal
         setPartyName('');
@@ -124,6 +138,7 @@ const Timbangan = () => {
         setSelectedPendingData(null);
 
         setIsModalOpen(true);
+        fetchPartyList();
     };
 
     const handleStageChange = async (stage) => {
@@ -378,15 +393,42 @@ const Timbangan = () => {
                             </div>
 
                             <div className="input-grid">
-                                <div className="input-group">
-                                    <label><User size={14} /> Nama Supplier / Pelanggan</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Contoh: Budi Santoso"
-                                        value={partyName}
-                                        onChange={(e) => setPartyName(e.target.value)}
-                                        disabled={currentStage === 2}
-                                    />
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                        <label style={{ marginBottom: 0 }}><User size={14} /> Supplier / Pelanggan</label>
+                                        <button
+                                            type="button"
+                                            className="link-btn"
+                                            onClick={() => setShowPartyLookup(!showPartyLookup)}
+                                            style={{ fontSize: '0.7rem', color: 'var(--accent-color)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                        >
+                                            {showPartyLookup ? 'Tutup' : 'Cari'}
+                                        </button>
+                                    </div>
+                                    {showPartyLookup ? (
+                                        <select
+                                            className="modal-select"
+                                            size="5"
+                                            onChange={(e) => {
+                                                setPartyName(e.target.value);
+                                                setShowPartyLookup(false);
+                                            }}
+                                            style={{ marginBottom: '8px' }}
+                                        >
+                                            <option value="" disabled>-- Pilih dari Database --</option>
+                                            {partyList.map((name, i) => (
+                                                <option key={i} value={name}>{name}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            placeholder="Contoh: Budi Santoso"
+                                            value={partyName}
+                                            onChange={(e) => setPartyName(e.target.value)}
+                                            disabled={currentStage === 2}
+                                        />
+                                    )}
                                 </div>
                                 <div className="input-group">
                                     <label><Package size={14} /> Jenis Barang</label>

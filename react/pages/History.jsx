@@ -84,16 +84,24 @@ const History = () => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            // Recalculate weight and diff if needed
             const w1 = parseFloat(editingItem.weight_1) || 0;
             const w2 = parseFloat(editingItem.weight_2) || 0;
-            const refaksi = parseFloat(editingItem.refaksi) || 0;
-            const newWeight = Math.abs(w1 - w2) - refaksi;
+            const refaksiVal = parseFloat(editingItem.refaksi) || 0;
+            const notedWeight = parseFloat(editingItem.noted_weight) || 0;
+
+            let newWeight = 0;
+            if (w2 > 0) {
+                const gross = Math.abs(w1 - w2);
+                const deduction = Math.round(gross * (refaksiVal / 100));
+                newWeight = gross - deduction;
+            } else {
+                newWeight = w1;
+            }
 
             const updatedData = {
                 ...editingItem,
                 weight: newWeight,
-                diff_weight: newWeight - (parseFloat(editingItem.noted_weight) || 0)
+                diff_weight: newWeight - notedWeight
             };
 
             const result = await window.electronAPI.updateHistory(updatedData);
@@ -308,6 +316,26 @@ const History = () => {
                             </div>
                             <form onSubmit={handleUpdate}>
                                 <div className="modal-body">
+                                    <div className="modal-weight-preview-grid triple" style={{ marginBottom: '24px' }}>
+                                        <div className="modal-weight-preview secondary">
+                                            <span className="label">Timbang 1</span>
+                                            <div className="value">{Math.round(editingItem.weight_1 || 0)} <small>kg</small></div>
+                                        </div>
+                                        <div className="modal-weight-preview secondary">
+                                            <span className="label">Timbang 2</span>
+                                            <div className="value">{Math.round(editingItem.weight_2 || 0)} <small>kg</small></div>
+                                        </div>
+                                        <div className="modal-weight-preview accent">
+                                            <span className="label">Berat Bersih</span>
+                                            <div className="value">
+                                                {editingItem.weight_2 > 0
+                                                    ? Math.round(Math.abs(editingItem.weight_1 - editingItem.weight_2) * (1 - (editingItem.refaksi || 0) / 100))
+                                                    : Math.round(editingItem.weight_1 || 0)
+                                                }
+                                                <small> kg</small>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="input-grid">
                                         <div className="input-group">
                                             <label>Nomor Plat Kendaraan</label>
@@ -360,7 +388,7 @@ const History = () => {
                                             />
                                         </div>
                                         <div className="input-group">
-                                            <label>Refaksi (kg)</label>
+                                            <label>Refaksi (%)</label>
                                             <input
                                                 type="number"
                                                 value={editingItem.refaksi || 0}
