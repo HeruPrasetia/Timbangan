@@ -68,6 +68,7 @@ function createMainWindow() {
         const { setupPrintHandlers } = require('./electron/print');
         const { setupReportsHandlers } = require('./electron/reports');
         const { setupUpdatesHandlers } = require('./electron/updates');
+        const { setupDbHandlers } = require('./electron/dbHandlers');
 
         setupSerialPortHandlers();
         setupWeighingHandlers();
@@ -77,6 +78,7 @@ function createMainWindow() {
         setupPrintHandlers();
         setupReportsHandlers();
         setupUpdatesHandlers();
+        setupDbHandlers(mainWindow);
 
         setTimeout(() => {
             if (splashWindow && !splashWindow.isDestroyed()) {

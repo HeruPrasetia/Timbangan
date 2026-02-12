@@ -1,11 +1,11 @@
 {
-  "name": "timbangan",
-  "version": "3.0.4",
-  "description": "Timbangan App",
+  "name": "GijutsuDesktop",
+  "version": "1.0.1",
+  "description": "Gijutsu Desktop App",
   "main": "main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/HeruPrasetia/Timbangan.git"
+    "url": "https://github.com/HeruPrasetia/GijutsuDesktop.git"
   },
   "scripts": {
     "start": "electron .",
@@ -18,7 +18,7 @@
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [],
-  "author": "NaylaTools Software - heru.praseti@gmail.com - 081234779772",
+  "author": "Gijutsu Software - heru.praseti@gmail.com - 081234779772",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -42,8 +42,8 @@
     "wait-on": "^9.0.3"
   },
   "build": {
-    "appId": "com.naylatools.timbangan",
-    "productName": "Timbangan",
+    "appId": "com.gijutsu.gijutsudesktop",
+    "productName": "Gijutsu Desktop",
     "directories": {
       "output": "dist"
     },
@@ -81,13 +81,13 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Timbangan"
+      "shortcutName": "Gijutsu Desktop"
     },
     "publish": [
       {
         "provider": "github",
         "owner": "HeruPrasetia",
-        "repo": "Timbangan"
+        "repo": "GijutsuDesktop"
       }
     ]
   }

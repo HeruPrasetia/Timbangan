@@ -90,5 +90,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
         const listener = () => callback();
         ipcRenderer.on('template-list-updated', listener);
         return () => ipcRenderer.removeListener('template-list-updated', listener);
-    }
+    },
+    // New Sync & DB methods
+    initDatabase: () => ipcRenderer.invoke('init-database'),
+    handleSyncAll: (token) => ipcRenderer.invoke('handle-sync-all', token),
+    onSyncProgress: (callback) => {
+        const listener = (_event, data) => callback(data);
+        ipcRenderer.on('sync-progress', listener);
+        return () => ipcRenderer.removeListener('sync-progress', listener);
+    },
+    // Product & Unit methods
+    getAllProducts: (params) => ipcRenderer.invoke('get-all-products', params),
+    getItemUnits: (itemId) => ipcRenderer.invoke('get-item-units', itemId),
+    // Transaction methods
+    createDocNumber: (docType) => ipcRenderer.invoke('create-doc-number', docType),
+    saveTransaction: (data) => ipcRenderer.invoke('save-transaction', data),
+    getPendingTransactions: () => ipcRenderer.invoke('get-pending-transactions'),
+    getTransactionDetails: (docNumber) => ipcRenderer.invoke('get-transaction-details', docNumber),
+    getTodaySales: () => ipcRenderer.invoke('get-today-sales'),
+    getCustomers: () => ipcRenderer.invoke('get-customers'),
 });
