@@ -1,11 +1,11 @@
 {
-  "name": "GijutsuDesktop",
-  "version": "1.0.1",
-  "description": "Gijutsu Desktop App",
+  "name": "timbangan",
+  "version": "3.0.4",
+  "description": "Timbangan App",
   "main": "main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/HeruPrasetia/GijutsuDesktop.git"
+    "url": "https://github.com/HeruPrasetia/Timbangan.git"
   },
   "scripts": {
     "start": "electron .",
@@ -18,32 +18,32 @@
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [],
-  "author": "Gijutsu Software - heru.praseti@gmail.com - 081234779772",
+  "author": "NaylaTools Software - heru.praseti@gmail.com - 081234779772",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "better-sqlite3": "^11.5.0",
+    "better-sqlite3": "^11.10.0",
     "chart.js": "^4.5.1",
     "exceljs": "^4.4.0",
     "googleapis": "^169.0.0",
     "lucide-react": "^0.562.0",
-    "react": "^19.2.3",
+    "react": "^19.2.7",
     "react-chartjs-2": "^5.3.1",
-    "react-dom": "^19.2.3",
+    "react-dom": "^19.2.7",
     "serialport": "^13.0.0"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.6.0",
-    "@vitejs/plugin-react": "^5.1.2",
+    "@electron/rebuild": "^3.7.2",
+    "@vitejs/plugin-react": "^5.2.0",
     "concurrently": "^9.2.1",
-    "electron": "^33.2.0",
+    "electron": "^33.4.11",
     "electron-builder": "^24.13.3",
-    "vite": "^7.3.0",
-    "wait-on": "^9.0.3"
+    "vite": "^7.3.5",
+    "wait-on": "^9.0.10"
   },
   "build": {
-    "appId": "com.gijutsu.gijutsudesktop",
-    "productName": "Gijutsu Desktop",
+    "appId": "com.naylatools.timbangan",
+    "productName": "Timbangan",
     "directories": {
       "output": "dist"
     },
@@ -81,13 +81,13 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Gijutsu Desktop"
+      "shortcutName": "Timbangan"
     },
     "publish": [
       {
         "provider": "github",
         "owner": "HeruPrasetia",
-        "repo": "GijutsuDesktop"
+        "repo": "Timbangan"
       }
     ]
   }

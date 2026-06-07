@@ -1,30 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import Timbangan from './pages/Timbangan';
 import History from './pages/History';
 import Laporan from './pages/Laporan';
 import Settings from './pages/Settings';
-import Login from './pages/Login';
-import Kasir from './pages/Kasir';
-import { History as HistoryIcon, BarChart3, Settings as SettingsIcon, LogOut, Loader2, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, History as HistoryIcon, BarChart3, Settings as SettingsIcon, RotateCw } from 'lucide-react';
 import LogoPanjang from './assets/LogoPanjang.png';
 
 function App() {
-    const [activeTab, setActiveTab] = useState('kasir-view');
+    const [activeTab, setActiveTab] = useState('dashboard-view');
     const [isConnected, setIsConnected] = useState(false);
     const [theme, setTheme] = useState('dark');
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
     useEffect(() => {
-        // Auth check
-        const checkAuth = () => {
-            const token = localStorage.getItem('Token');
-            if (token) {
-                setIsLoggedIn(true);
-            }
-            setIsLoadingAuth(false);
-        };
-        checkAuth();
-
         // Load initial settings and theme
         const fetchInitialData = async () => {
             const settings = await window.electronAPI.getSettings();
@@ -63,19 +50,10 @@ function App() {
         };
     }, []);
 
-    const handleLoginSuccess = (token) => {
-        setIsLoggedIn(true);
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('Token');
-        setIsLoggedIn(false);
-    };
-
     const renderView = () => {
         switch (activeTab) {
-            case 'kasir-view':
-                return <Kasir />;
+            case 'dashboard-view':
+                return <Timbangan />;
             case 'history-view':
                 return <History />;
             case 'reports-view':
@@ -83,21 +61,9 @@ function App() {
             case 'settings-view':
                 return <Settings />;
             default:
-                return <Kasir />;
+                return <Timbangan />;
         }
     };
-
-    if (isLoadingAuth) {
-        return (
-            <div className="auth-loading">
-                <Loader2 className="animate-spin" size={48} />
-            </div>
-        );
-    }
-
-    if (!isLoggedIn) {
-        return <Login onLoginSuccess={handleLoginSuccess} />;
-    }
 
     return (
         <div className="app-container">
@@ -107,13 +73,12 @@ function App() {
                 </div>
 
                 <nav className="nav-menu">
-
                     <button
-                        className={`nav-item ${activeTab === 'kasir-view' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('kasir-view')}
+                        className={`nav-item ${activeTab === 'dashboard-view' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('dashboard-view')}
                     >
-                        <ShoppingCart size={20} />
-                        Kasir
+                        <LayoutDashboard size={20} />
+                        Timbangan
                     </button>
 
                     <button
@@ -138,15 +103,6 @@ function App() {
                     >
                         <SettingsIcon size={20} />
                         Pengaturan
-                    </button>
-
-                    <button
-                        className="nav-item logout-btn"
-                        onClick={handleLogout}
-                        style={{ marginTop: 'auto', color: 'var(--danger-color)' }}
-                    >
-                        <LogOut size={20} />
-                        Keluar
                     </button>
                 </nav>
 

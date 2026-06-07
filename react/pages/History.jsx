@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Download, Printer, Trash2, Edit, ChevronLeft, ChevronRight, Package, Truck, Search, X, Save, Eye, FileText } from 'lucide-react';
+import { Calendar, Download, Printer, Trash2, Edit, ChevronLeft, ChevronRight, Package, Truck, Search, X, Save } from 'lucide-react';
 
 const History = () => {
     const [history, setHistory] = useState([]);
@@ -12,13 +12,13 @@ const History = () => {
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-    const [selectedItem, setSelectedItem] = useState(null);
-    const [summary, setSummary] = useState({ totalAmount: 0, count: 0 });
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+    const [summary, setSummary] = useState({ totalWeight: 0, totalDiff: 0, count: 0 });
 
     useEffect(() => {
         loadHistory();
-    }, [currentPage, startDate, endDate]);
+    }, [currentPage]);
 
     const loadHistory = async () => {
         setLoading(true);
@@ -57,36 +57,75 @@ const History = () => {
         }
     };
 
-    const handlePrint = async (item) => {
-        // Implement printing for sales receipts if needed
-        console.log("Print transaction:", item);
-        window.Pesan2("Fitur cetak ulang sedang disiapkan", "Info", "info");
+    const handlePrint = async (id) => {
+        const settings = await window.electronAPI.getSettings();
+        const item = await window.electronAPI.getHistoryById(id);
+        const printData = {
+            ...item,
+            companyName: settings.company_name,
+            companyAddress: settings.company_address,
+            companyPhone: settings.company_phone
+        };
+        window.electronAPI.printSuratJalan(printData);
     };
 
     const handleDelete = async (id) => {
-        if (confirm('Hapus transaksi ini? Seluruh detail transaksi juga akan dihapus.')) {
+        if (confirm('Hapus rekaman ini?')) {
             await window.electronAPI.deleteHistory(id);
             loadHistory();
         }
     };
 
-    const viewDetails = async (id) => {
+    const handleEdit = (item) => {
+        setEditingItem({ ...item });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
         try {
-            const item = await window.electronAPI.getHistoryById(id);
-            setSelectedItem(item);
-            setIsDetailModalOpen(true);
+            const w1 = parseFloat(editingItem.weight_1) || 0;
+            const w2 = parseFloat(editingItem.weight_2) || 0;
+            const refaksiVal = parseFloat(editingItem.refaksi) || 0;
+            const notedWeight = parseFloat(editingItem.noted_weight) || 0;
+
+            let newWeight = 0;
+            if (w2 > 0) {
+                const gross = Math.abs(w1 - w2);
+                const deduction = Math.round(gross * (refaksiVal / 100));
+                newWeight = gross - deduction;
+            } else {
+                newWeight = w1;
+            }
+
+            const updatedData = {
+                ...editingItem,
+                weight: newWeight,
+                diff_weight: newWeight - notedWeight
+            };
+
+            const result = await window.electronAPI.updateHistory(updatedData);
+            if (result.success) {
+                setIsEditModalOpen(false);
+                loadHistory();
+            } else {
+                alert('Gagal mengupdate: ' + result.error);
+            }
         } catch (error) {
-            console.error("View Details Error:", error);
+            console.error('Update Error:', error);
         }
     };
 
+    const getDiffClass = (diff) => {
+        if (diff > 0) return 'diff-positive';
+        if (diff < 0) return 'diff-negative';
+        return 'diff-zero';
+    };
+
     return (
-        <div className="tab-view active history-view">
+        <div className="tab-view active">
             <header className="view-header">
-                <div className="title-area">
-                    <h2>Riwayat Penjualan</h2>
-                    <p className="subtitle">Pantau semua transaksi yang telah diselesaikan</p>
-                </div>
+                <h2>Transaction History</h2>
                 <div className="filter-bar">
                     <div className="filter-group">
                         <label>Dari:</label>
@@ -109,7 +148,7 @@ const History = () => {
                         <Search size={16} className="search-icon" />
                         <input
                             type="text"
-                            placeholder="Cari Pelanggan / No Dokument..."
+                            placeholder="Cari Nama / No Plat / No Dokumen..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
@@ -136,10 +175,11 @@ const History = () => {
                     <table>
                         <thead>
                             <tr>
-                                <th>No Dokument / Waktu</th>
-                                <th>Pelanggan</th>
-                                <th>Pembayaran</th>
-                                <th>Total Transaksi</th>
+                                <th>Waktu</th>
+                                <th>Detail</th>
+                                <th>Berat Nota (kg)</th>
+                                <th>Berat (kg)</th>
+                                <th>Selisih</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -150,45 +190,67 @@ const History = () => {
                                 <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>Tidak ada data.</td></tr>
                             ) : (
                                 history.map((item) => (
-                                    <tr key={item.ID}>
+                                    <tr key={item.id}>
                                         <td>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                                                {item.DocNumber || '-'}
+                                            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                {item.doc_number || '-'}
                                             </div>
                                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                                {item.DocDate} {item.TimeCreated ? item.TimeCreated.split(' ')[1] : ''}
+                                                {item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID') : '-'}
                                             </div>
                                         </td>
                                         <td>
-                                            <span className="history-party">{item.CardName || 'Umum'}</span>
-                                            {item.Notes && <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.Notes}</div>}
+                                            <div className="history-detail">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span className="history-party">{item.party_name || '-'}</span>
+                                                    <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px', color: '#ccc', border: '1px solid var(--border-color)' }}>
+                                                        <Package size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                                                        {item.product_name || '-'}
+                                                    </span>
+                                                    <span className={`trx-badge ${item.trx_type === 'Penjualan' ? 'penjualan' : 'pembelian'}`}>
+                                                        {item.trx_type || 'Pembelian'}
+                                                    </span>
+                                                </div>
+                                                <span className="history-plate">
+                                                    <Truck size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                                                    {item.plate_number || 'No Plate'}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td>
-                                            <span className={`trx-badge ${item.PayType?.toLowerCase() === 'cash' ? 'penjualan' : 'pembelian'}`}>
-                                                {item.PayType || 'Cash'}
-                                            </span>
+                                            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                                                {Math.round(item.noted_weight || 0)}
+                                            </div>
                                         </td>
                                         <td>
                                             <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--accent-color)' }}>
-                                                Rp {(item.GrandTotal || 0).toLocaleString('id-ID')}
+                                                {Math.round(item.weight)}
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                W1: {Math.round(item.weight_1 || 0)} | W2: {Math.round(item.weight_2 || 0)}
                                             </div>
                                         </td>
                                         <td>
+                                            <span className={`diff-tag ${getDiffClass(item.diff_weight)}`}>
+                                                {item.diff_weight > 0 ? '+' : ''}{Math.round(item.diff_weight || 0)}
+                                            </span>
+                                        </td>
+                                        <td>
                                             <div style={{ display: 'flex', gap: '4px' }}>
-                                                <button className="icon-btn" onClick={() => viewDetails(item.ID)} title="Detail">
-                                                    <Eye size={16} color="var(--accent-color)" />
+                                                <button className="icon-btn" onClick={() => handleEdit(item)} title="Edit">
+                                                    <Edit size={16} color="var(--accent-color)" />
                                                 </button>
-                                                <button className="icon-btn" onClick={() => handlePrint(item)} title="Cetak">
+                                                <button className="icon-btn" onClick={() => handlePrint(item.id)} title="Cetak">
                                                     <Printer size={16} color="var(--accent-color)" />
                                                 </button>
-                                                <button className="icon-btn" onClick={() => handleDelete(item.ID)} title="Hapus">
+                                                <button className="icon-btn" onClick={() => handleDelete(item.id)} title="Hapus">
                                                     <Trash2 size={16} color="var(--danger-color)" />
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
+                                )
+                                ))}
                         </tbody>
                     </table>
                 </div>
@@ -215,96 +277,174 @@ const History = () => {
 
                 <div className="history-summary-bar">
                     <div className="summary-item">
-                        <span className="label">Total Transaksi</span>
+                        <span className="label">Total Baris</span>
                         <span className="value">{summary.count || 0}</span>
                     </div>
                     <div className="summary-item">
-                        <span className="label">Total Nilai Penjualan</span>
-                        <span className="value accent">Rp {(summary.totalAmount || 0).toLocaleString('id-ID')}</span>
+                        <span className="label">Total W1</span>
+                        <span className="value">{(summary.totalW1 || 0).toLocaleString('id-ID')} <small>kg</small></span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total W2</span>
+                        <span className="value">{(summary.totalW2 || 0).toLocaleString('id-ID')} <small>kg</small></span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total Berat (Netto)</span>
+                        <span className="value accent">{(summary.totalWeight || 0).toLocaleString('id-ID')} <small>kg</small></span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total Berat Nota</span>
+                        <span className="value">{(summary.totalNotedWeight || 0).toLocaleString('id-ID')} <small>kg</small></span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="label">Total Selisih</span>
+                        <span className={`value ${summary.totalDiff > 0 ? 'positive' : summary.totalDiff < 0 ? 'negative' : ''}`}>
+                            {summary.totalDiff > 0 ? '+' : ''}{(summary.totalDiff || 0).toLocaleString('id-ID')} <small>kg</small>
+                        </span>
                     </div>
                 </div>
             </div>
-
-            {isDetailModalOpen && selectedItem && (
-                <div className="modal-overlay active">
-                    <div className="modal-card wide">
-                        <div className="modal-header">
-                            <div className="title-with-icon">
-                                <FileText size={20} />
-                                <h3>Detail Transaksi: {selectedItem.DocNumber}</h3>
+            {
+                isEditModalOpen && editingItem && (
+                    <div className="modal-overlay active">
+                        <div className="modal-card">
+                            <div className="modal-header">
+                                <h3>Edit History - {editingItem.doc_number}</h3>
+                                <button className="close-btn" onClick={() => setIsEditModalOpen(false)}>
+                                    <X size={20} />
+                                </button>
                             </div>
-                            <button className="close-btn" onClick={() => setIsDetailModalOpen(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="transaction-detail-header">
-                                <div className="detail-row">
-                                    <span>Pelanggan:</span>
-                                    <strong>{selectedItem.CardName || 'Umum'}</strong>
+                            <form onSubmit={handleUpdate}>
+                                <div className="modal-body">
+                                    <div className="modal-weight-preview-grid triple" style={{ marginBottom: '24px' }}>
+                                        <div className="modal-weight-preview secondary">
+                                            <span className="label">Timbang 1</span>
+                                            <div className="value">{Math.round(editingItem.weight_1 || 0)} <small>kg</small></div>
+                                        </div>
+                                        <div className="modal-weight-preview secondary">
+                                            <span className="label">Timbang 2</span>
+                                            <div className="value">{Math.round(editingItem.weight_2 || 0)} <small>kg</small></div>
+                                        </div>
+                                        <div className="modal-weight-preview accent">
+                                            <span className="label">Berat Bersih</span>
+                                            <div className="value">
+                                                {editingItem.weight_2 > 0
+                                                    ? Math.round(Math.abs(editingItem.weight_1 - editingItem.weight_2) * (1 - (editingItem.refaksi || 0) / 100))
+                                                    : Math.round(editingItem.weight_1 || 0)
+                                                }
+                                                <small> kg</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="input-grid">
+                                        <div className="input-group">
+                                            <label>Nomor Plat Kendaraan</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.plate_number || ''}
+                                                onChange={(e) => setEditingItem({ ...editingItem, plate_number: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Nama Supplier / Pelanggan</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.party_name || ''}
+                                                onChange={(e) => setEditingItem({ ...editingItem, party_name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Jenis Barang</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.product_name || ''}
+                                                onChange={(e) => setEditingItem({ ...editingItem, product_name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Jenis Transaksi</label>
+                                            <select
+                                                value={editingItem.trx_type || 'Pembelian'}
+                                                onChange={(e) => setEditingItem({ ...editingItem, trx_type: e.target.value })}
+                                            >
+                                                <option value="Pembelian">Pembelian</option>
+                                                <option value="Penjualan">Penjualan</option>
+                                            </select>
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Nama Sopir</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.driver_name || ''}
+                                                onChange={(e) => setEditingItem({ ...editingItem, driver_name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Harga /kg</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.price || 0}
+                                                onChange={(e) => setEditingItem({ ...editingItem, price: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Refaksi (%)</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.refaksi || 0}
+                                                onChange={(e) => setEditingItem({ ...editingItem, refaksi: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Berat Nota (kg)</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.noted_weight || 0}
+                                                onChange={(e) => setEditingItem({ ...editingItem, noted_weight: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Berat 1 (kg) - Locked</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.weight_1 || 0}
+                                                disabled
+                                                style={{ background: 'rgba(255,255,255,0.05)', opacity: 0.6 }}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label>Berat 2 (kg) - Locked</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.weight_2 || 0}
+                                                disabled
+                                                style={{ background: 'rgba(255,255,255,0.05)', opacity: 0.6 }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="input-group" style={{ marginTop: '24px' }}>
+                                        <label>Catatan</label>
+                                        <textarea
+                                            value={editingItem.notes || ''}
+                                            onChange={(e) => setEditingItem({ ...editingItem, notes: e.target.value })}
+                                            rows="3"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="detail-row">
-                                    <span>Tanggal:</span>
-                                    <strong>{selectedItem.DocDate} {selectedItem.TimeCreated ? selectedItem.TimeCreated.split(' ')[1] : ''}</strong>
+                                <div className="modal-footer">
+                                    <button type="button" className="primary-btn secondary" onClick={() => setIsEditModalOpen(false)}>
+                                        Batal
+                                    </button>
+                                    <button type="submit" className="primary-btn">
+                                        <Save size={18} /> Simpan Perubahan
+                                    </button>
                                 </div>
-                                <div className="detail-row">
-                                    <span>Pembayaran:</span>
-                                    <strong>{selectedItem.PayType}</strong>
-                                </div>
-                                <div className="detail-row">
-                                    <span>Status:</span>
-                                    <strong style={{ color: 'var(--success-color)' }}>Selesai</strong>
-                                </div>
-                            </div>
-
-                            <div className="detail-items-table">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Nama Barang</th>
-                                            <th style={{ textAlign: 'center' }}>Qty</th>
-                                            <th style={{ textAlign: 'right' }}>Harga</th>
-                                            <th style={{ textAlign: 'right' }}>Subtotal</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {selectedItem.details?.map((detail, idx) => (
-                                            <tr key={idx}>
-                                                <td>{detail.ItemName}</td>
-                                                <td style={{ textAlign: 'center' }}>{parseFloat(detail.Qty).toLocaleString('id-ID')} {detail.UnitName}</td>
-                                                <td style={{ textAlign: 'right' }}>Rp {parseFloat(detail.Price).toLocaleString('id-ID')}</td>
-                                                <td style={{ textAlign: 'right' }}>Rp {(parseFloat(detail.Qty) * parseFloat(detail.Price)).toLocaleString('id-ID')}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colSpan="3" style={{ textAlign: 'right', fontWeight: 'bold' }}>Grand Total</td>
-                                            <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--accent-color)' }}>
-                                                Rp {selectedItem.GrandTotal?.toLocaleString('id-ID')}
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-
-                            {selectedItem.Notes && (
-                                <div className="detail-notes">
-                                    <span>Catatan:</span>
-                                    <p>{selectedItem.Notes}</p>
-                                </div>
-                            )}
-                        </div>
-                        <div className="modal-footer">
-                            <button className="primary-btn secondary" onClick={() => setIsDetailModalOpen(false)}>Tutup</button>
-                            <button className="primary-btn" onClick={() => handlePrint(selectedItem)}>
-                                <Printer size={18} /> Cetak Struk
-                            </button>
+                            </form>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
