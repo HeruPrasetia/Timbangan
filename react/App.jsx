@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Timbangan from './pages/Timbangan';
 import History from './pages/History';
 import Laporan from './pages/Laporan';
 import Settings from './pages/Settings';
-import { LayoutDashboard, History as HistoryIcon, BarChart3, Settings as SettingsIcon, RotateCw } from 'lucide-react';
+import Login from './pages/Login';
+import { LayoutDashboard, History as HistoryIcon, BarChart3, Settings as SettingsIcon, RotateCw, LogOut } from 'lucide-react';
 import LogoPanjang from './assets/LogoPanjang.png';
 
 function App() {
+    const [isLoggedIn, setIsLoggedIn] = useState(() => {
+        return localStorage.getItem('isLoggedIn') === 'true';
+    });
     const [activeTab, setActiveTab] = useState('dashboard-view');
     const [isConnected, setIsConnected] = useState(false);
     const [theme, setTheme] = useState('dark');
+
+    const wsRef = useRef(null);
+    const lastSentWeight = useRef(null);
 
     useEffect(() => {
         // Load initial settings and theme
@@ -50,6 +57,115 @@ function App() {
         };
     }, []);
 
+    // WebSocket Connection and Event Handling
+    useEffect(() => {
+        if (!isLoggedIn) {
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+            return;
+        }
+
+        let isMounted = true;
+        let reconnectTimeout = null;
+
+        const connect = async () => {
+            try {
+                const settings = await window.electronAPI.getSettings();
+                const token = settings?.naylatools_token;
+
+                if (!token) {
+                    if (wsRef.current) {
+                        wsRef.current.close();
+                        wsRef.current = null;
+                    }
+                    return;
+                }
+
+                // If already connected with the same token, do nothing
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && wsRef.current.url.includes(encodeURIComponent(token))) {
+                    return;
+                }
+
+                if (wsRef.current) {
+                    wsRef.current.close();
+                }
+
+                const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const wsUrl = isDev 
+                    ? `ws://localhost:3003/ws?token=${encodeURIComponent(token)}` 
+                    : `wss://ws.naylatools.com/ws?token=${encodeURIComponent(token)}`;
+
+                console.log('Connecting to WebSocket:', wsUrl);
+                const ws = new WebSocket(wsUrl);
+                wsRef.current = ws;
+
+                ws.onopen = () => {
+                    if (isMounted) console.log('WebSocket connected successfully');
+                };
+
+                ws.onclose = () => {
+                    if (isMounted) {
+                        console.log('WebSocket disconnected. Retrying in 5s...');
+                        reconnectTimeout = setTimeout(connect, 5000);
+                    }
+                };
+
+                ws.onerror = (err) => {
+                    if (isMounted) console.error('WebSocket error:', err);
+                };
+            } catch (err) {
+                console.error('WebSocket connection setup failed:', err);
+                if (isMounted) reconnectTimeout = setTimeout(connect, 5000);
+            }
+        };
+
+        connect();
+
+        // Listen for weight/port data changes
+        const unsubscribeData = window.electronAPI.onPortData((data) => {
+            if (!data) return;
+            const sanitized = data.replace(/[^\x20-\x7E]/g, '').trim();
+            if (!sanitized || sanitized.length < 8) return;
+            
+            try {
+                let isNegative = sanitized.startsWith('-');
+                let coreValue = sanitized.substring(1, 7);
+                let nilai = parseInt(coreValue);
+                if (isNaN(nilai)) return;
+                const parsedWeight = isNegative ? -nilai : nilai;
+
+                // Send to websocket if connected and value changed
+                if (lastSentWeight.current !== parsedWeight) {
+                    lastSentWeight.current = parsedWeight;
+                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                        wsRef.current.send(JSON.stringify({
+                            type: "timbangan_change",
+                            nilai: parsedWeight
+                        }));
+                    }
+                }
+            } catch (e) {
+                console.error('WebSocket send error:', e);
+            }
+        });
+
+        // Periodically refresh/validate token in case it was updated in Settings
+        const intervalId = setInterval(connect, 5000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            unsubscribeData();
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+        };
+    }, [isLoggedIn]);
+
     const renderView = () => {
         switch (activeTab) {
             case 'dashboard-view':
@@ -64,6 +180,20 @@ function App() {
                 return <Timbangan />;
         }
     };
+
+    const handleLoginSuccess = () => {
+        localStorage.setItem('isLoggedIn', 'true');
+        setIsLoggedIn(true);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('isLoggedIn');
+        setIsLoggedIn(false);
+    };
+
+    if (!isLoggedIn) {
+        return <Login onLoginSuccess={handleLoginSuccess} />;
+    }
 
     return (
         <div className="app-container">
@@ -111,6 +241,15 @@ function App() {
                         <span className={`status-dot ${isConnected ? 'connected' : ''}`}></span>
                         {isConnected ? 'Port Terhubung' : 'Port Terputus'}
                     </div>
+
+                    <button
+                        className="nav-item logout-btn"
+                        style={{ marginTop: '12px', padding: '10px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                        onClick={handleLogout}
+                    >
+                        <LogOut size={20} />
+                        Keluar
+                    </button>
                 </div>
             </aside>
 
@@ -122,3 +261,4 @@ function App() {
 }
 
 export default App;
+

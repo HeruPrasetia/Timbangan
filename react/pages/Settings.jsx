@@ -1,29 +1,27 @@
-import React, { useState, useEffect } from 'react';
 import {
     Building2,
-    MapPin,
-    Phone,
-    Save,
-    Database,
-    Trash2,
     Codepen,
-    Moon,
-    Sun,
+    Database,
     Download,
-    Terminal,
-    Plus,
     Edit,
+    Moon,
+    Plus,
     Power,
     RotateCw,
+    Save,
+    Sun,
+    Terminal,
+    Trash2,
     X
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const Settings = () => {
     const [companyName, setCompanyName] = useState('');
     const [companyAddress, setCompanyAddress] = useState('');
     const [companyPhone, setCompanyPhone] = useState('');
     const [googleScriptUrl, setGoogleScriptUrl] = useState('');
-    const [gijutsuToken, setGijutsuToken] = useState('');
+    const [naylatoolsToken, setNaylaToolsToken] = useState('');
     const [appTheme, setAppTheme] = useState('dark');
 
     const [templates, setTemplates] = useState([]);
@@ -78,7 +76,7 @@ const Settings = () => {
                 setCompanyPhone(settings.company_phone || '');
                 setGoogleScriptUrl(settings.google_script_url || '');
                 setAppTheme(settings.app_theme || 'dark');
-                setGijutsuToken(settings.gijutsu_token || '');
+                setNaylaToolsToken(settings.naylatools_token || '');
             }
         } catch (err) {
             console.error('Failed to load settings:', err);
@@ -123,7 +121,7 @@ const Settings = () => {
         const result = await window.electronAPI.saveSettings({
             google_script_url: googleScriptUrl,
             app_theme: appTheme,
-            gijutsu_token: gijutsuToken
+            naylatools_token: naylaToolsToken
         });
         if (result.success) {
             // Apply theme
@@ -360,12 +358,12 @@ const Settings = () => {
                     </div>
 
                     <div className="input-group">
-                        <label>Sambungkan ke Gijustu Software</label>
+                        <label>Sambungkan ke NaylaTools Software</label>
                         <input
                             type="text"
-                            value={gijutsuToken}
-                            onChange={(e) => setGijutsuToken(e.target.value)}
-                            placeholder="Token Gijustu"
+                            value={naylatoolsToken}
+                            onChange={(e) => setNaylaToolsToken(e.target.value)}
+                            placeholder="Token NaylaTools"
                         />
                         <small style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Kosongkan untuk menonaktifkan sync otomatis.</small>
                     </div>
