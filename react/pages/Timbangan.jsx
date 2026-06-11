@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { RefreshCw, Power, Save, X, Truck, User, Package, Hash, Weight, Info } from 'lucide-react';
+import { Hash, Info, Package, Power, RefreshCw, Save, Truck, User, Weight, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useToast } from '../hooks/useToast';
+import { isTokenValid } from '../utils/tokenUtils';
 
 const Timbangan = () => {
+    const toast = useToast();
     const [weight, setWeight] = useState(0);
     const [rawData, setRawData] = useState('Menunggu data...');
     const [ports, setPorts] = useState([]);
@@ -53,7 +56,7 @@ const Timbangan = () => {
         });
 
         const unsubscribeError = window.electronAPI.onPortError((error) => {
-            alert(`Error: ${error}`);
+            toast.error(`Koneksi Error: ${error}`);
             setIsConnected(false);
         });
 
@@ -87,7 +90,7 @@ const Timbangan = () => {
             setIsConnected(false);
         } else {
             if (!selectedPort) {
-                alert('Silakan pilih port terlebih dahulu!');
+                toast.warning('Silakan pilih port terlebih dahulu!');
                 return;
             }
             window.electronAPI.connectPort({ path: selectedPort, baudRate: parseInt(baudRate) });
@@ -180,13 +183,15 @@ const Timbangan = () => {
             notes: ''
         };
 
+        let startWeight = 0;
         if (currentStage === 1) {
             data.weight_1 = weight;
             data.weight = weight;
             data.diff_weight = weight - data.noted_weight;
+            startWeight = weight;
         } else {
             if (!selectedPendingData) {
-                alert('Pilih rekaman timbang pertama!');
+                toast.warning('Pilih rekaman timbang pertama!');
                 return;
             }
             data.id = selectedPendingData.id;
@@ -200,15 +205,76 @@ const Timbangan = () => {
 
             data.weight = grossWeight - deduction;
             data.diff_weight = data.weight - data.noted_weight;
+            startWeight = weight1;
         }
 
         const result = await window.electronAPI.saveWeight(data);
         if (result.success) {
             setIsModalOpen(false);
-            // alert('Berhasil disimpan!');
+            toast.success('Berhasil disimpan!');
+
+            // Get settings to check token
+            const settings = await window.electronAPI.getSettings();
+            
+            // Send to server only if token exists and is valid
+            if (settings?.naylatools_token && isTokenValid(settings.naylatools_token)) {
+                try {
+                    const serverData = new URLSearchParams();
+                    serverData.append('DocType', trxType == "Pembelian" ? "Masuk" : "Keluar");
+                    // Format date as YYYY-mm-dd
+                    const docDate = new Date().toISOString().split('T')[0];
+                    serverData.append('DocDate', docDate);
+                    serverData.append('CardID', 0);
+                    serverData.append('CardName', partyName);
+                    serverData.append('ItemID', 0);
+                    serverData.append('ItemName', productName);
+                    serverData.append('Qty', data.weight);
+                    serverData.append('QtyUnit', 'kg');
+                    serverData.append('UnitName', 'kg');
+                    serverData.append('Price', data.price);
+                    serverData.append('Total', data.weight * data.price);
+                    serverData.append('NotaWeight', data.noted_weight);
+                    serverData.append('StartWeight', startWeight);
+                    serverData.append('PlatNomer', plateNumber);
+                    serverData.append('Driver', data.driver_name);
+                    serverData.append('Kendaraan', plateNumber);
+                    serverData.append('act', 'input');
+                    
+                    // Determine server URL
+                    const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                    const serverUrl = isDev 
+                        ? 'http://localhost:3002/transTimbanganCrud' 
+                        : 'https://apigo.naylatools.com/transTimbanganCrud';
+
+                    const response = await fetch(serverUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${settings.naylatools_token}`
+                        },
+                        body: serverData
+                    });
+
+                    if (!response.ok) {
+                        toast.error(`Server error: ${response.status}`);
+                    } else {
+                        const responseData = await response.json();
+                        if (responseData.status === 'sukses' || responseData.success) {
+                            toast.success('Data tersinkronisasi ke server!');
+                        } else {
+                            toast.warning(`Server: ${responseData.pesan || 'Sync complete'}`);
+                        }
+                    }
+                } catch (err) {
+                    toast.error(`Gagal sinkronisasi: ${err.message}`);
+                }
+            } else if (settings?.naylatools_token && !isTokenValid(settings.naylatools_token)) {
+                // Token exists but is invalid/expired
+                toast.warning('Token telah kadaluarsa. Silakan login kembali untuk sinkronisasi server.');
+                // Optionally clear the invalid token
+                await window.electronAPI.saveSettings({ naylatools_token: '' });
+            }
 
             // Auto Print logic
-            const settings = await window.electronAPI.getSettings();
             const history = await window.electronAPI.getHistoryById(result.id);
             const printData = {
                 ...history,
@@ -219,7 +285,7 @@ const Timbangan = () => {
             };
             window.electronAPI.printSuratJalan(printData);
         } else {
-            alert('Gagal menyimpan: ' + result.error);
+            toast.error(`Gagal menyimpan: ${result.error}`);
         }
     };
 

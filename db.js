@@ -79,6 +79,7 @@ function migrateDatabase() {
         { name: 'timestamp_1', type: 'DATETIME' },
         { name: 'refaksi', type: 'float DEFAULT 0' },
         { name: 'timestamp_2', type: 'DATETIME' },
+        { name: 'DocNumberReff', type: 'TEXT default null' },
     ];
 
     requiredColumns.forEach(col => {

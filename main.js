@@ -83,6 +83,11 @@ function createMainWindow() {
                 splashWindow.close();
             }
             mainWindow.show();
+            
+            // Open DevTools in development mode
+            if (!app.isPackaged) {
+                mainWindow.webContents.openDevTools();
+            }
         }, 2000);
     });
 }

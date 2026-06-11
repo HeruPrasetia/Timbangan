@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Download, Printer, Trash2, Edit, ChevronLeft, ChevronRight, Package, Truck, Search, X, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Edit, Package, Printer, Save, Search, Trash2, Truck, Upload, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const History = () => {
     const [history, setHistory] = useState([]);
@@ -122,6 +122,10 @@ const History = () => {
         return 'diff-zero';
     };
 
+    const handleUpload = async ()=>{
+        console.log("Hallo");
+    }
+
     return (
         <div className="tab-view active">
             <header className="view-header">
@@ -166,6 +170,8 @@ const History = () => {
 
                     <button className="icon-btn excel-btn" title="Export ke Excel" onClick={handleExport}>
                         <Download size={18} color="var(--text-primary)" />
+                    </button> <button className="icon-btn excel-btn" title="Upload Ke Server" onClick={handleUpload}>
+                        <Upload size={18} color="var(--text-primary)" />
                     </button>
                 </div>
             </header>
