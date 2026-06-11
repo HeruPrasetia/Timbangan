@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { User, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import LogoPanjang from '../assets/LogoPanjang.png';
+import { useToast } from '../hooks/useToast';
+import { decrypt } from '../utils/tokenUtils';
 
 function Login({ onLoginSuccess }) {
     const [username, setUsername] = useState('');
@@ -8,52 +10,72 @@ function Login({ onLoginSuccess }) {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const toast = useToast();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
-        if (username !== 'admin' || password !== 'naylatools') {
-            setError('Username atau password salah.');
-            setIsLoading(false);
+        if (username === 'admin') {
+            if (password === 'naylatools') {
+                onLoginSuccess();
+            } else {
+                setError('Username atau password salah.');
+                toast.error('Password admin salah.');
+                setIsLoading(false);
+            }
             return;
         }
 
         try {
             const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const apiUrl = isDev 
-                ? 'http://localhost:3002/checkLoginGoogle' 
-                : 'https://apigo.naylatools.com/checkLoginGoogle';
+            const apiUrl = isDev
+                ? 'http://localhost:3002/checkLogin'
+                : 'https://apigo.naylatools.com/checkLogin';
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                body: new URLSearchParams({ email: 'heru.praseti@gmail.com' })
+                body: new URLSearchParams({ email: username, password: password })
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.status === 'sukses') {
-                    const token = data.token;
-                    // Simpan token ke settings
-                    await window.electronAPI.saveSettings({
-                        naylatools_token: token
-                    });
-                } else {
-                    console.warn('Login Google verification status is not sukses:', data.pesan);
+            const responseText = await response.text();
+            let data = null;
+            try {
+                data = decrypt(responseText, undefined, undefined);
+            } catch (decErr) {
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonErr) {
+                    // Not JSON
                 }
+            }
+
+            if (data && data.status === 'sukses') {
+                const token = data.token;
+                // Simpan token ke settings
+                await window.electronAPI.saveSettings({
+                    naylatools_token: token
+                });
+                toast.success('Login sukses!');
+                onLoginSuccess();
+            } else if (data && data.pesan) {
+                setError(data.pesan);
+                toast.error(data.pesan);
             } else {
-                console.warn(`Server API responded with status: ${response.status}`);
+                setError(`Server API merespons dengan status: ${response.status}`);
+                toast.error(`Login gagal. Server merespons dengan status: ${response.status}`);
             }
         } catch (err) {
-            console.warn('Failed to fetch token from checkLoginGoogle (possibly offline):', err);
+            console.error('Failed to login:', err);
+            setError('Gagal menghubungkan ke server.');
+            toast.error('Gagal menghubungkan ke server.');
+        } finally {
+            setIsLoading(false);
         }
-
-        // Selalu biarkan masuk jika username dan password admin/naylatools benar (offline support)
-        onLoginSuccess();
     };
 
     return (

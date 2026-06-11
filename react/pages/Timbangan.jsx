@@ -1,7 +1,7 @@
 import { Hash, Info, Package, Power, RefreshCw, Save, Truck, User, Weight, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '../hooks/useToast';
-import { isTokenValid } from '../utils/tokenUtils';
+import { isTokenValid, decrypt } from '../utils/tokenUtils';
 
 const Timbangan = () => {
     const toast = useToast();
@@ -215,7 +215,7 @@ const Timbangan = () => {
 
             // Get settings to check token
             const settings = await window.electronAPI.getSettings();
-            
+
             // Send to server only if token exists and is valid
             if (settings?.naylatools_token && isTokenValid(settings.naylatools_token)) {
                 try {
@@ -239,11 +239,11 @@ const Timbangan = () => {
                     serverData.append('Driver', data.driver_name);
                     serverData.append('Kendaraan', plateNumber);
                     serverData.append('act', 'input');
-                    
+
                     // Determine server URL
                     const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                    const serverUrl = isDev 
-                        ? 'http://localhost:3002/transTimbanganCrud' 
+                    const serverUrl = isDev
+                        ? 'http://localhost:3002/transTimbanganCrud'
                         : 'https://apigo.naylatools.com/transTimbanganCrud';
 
                     const response = await fetch(serverUrl, {
@@ -254,15 +254,24 @@ const Timbangan = () => {
                         body: serverData
                     });
 
-                    if (!response.ok) {
-                        toast.error(`Server error: ${response.status}`);
-                    } else {
-                        const responseData = await response.json();
-                        if (responseData.status === 'sukses' || responseData.success) {
-                            toast.success('Data tersinkronisasi ke server!');
-                        } else {
-                            toast.warning(`Server: ${responseData.pesan || 'Sync complete'}`);
+                    const responseText = await response.text();
+                    let responseData = null;
+                    try {
+                        responseData = decrypt(responseText, undefined, settings.naylatools_token);
+                    } catch (decErr) {
+                        try {
+                            responseData = JSON.parse(responseText);
+                        } catch (jsonErr) {
+                            // Response is not JSON
                         }
+                    }
+
+                    if (responseData && (responseData.status === 'sukses' || responseData.success)) {
+                        toast.success('Data tersinkronisasi ke server!');
+                    } else if (responseData && responseData.pesan) {
+                        toast.error(`Server: ${responseData.pesan}`);
+                    } else {
+                        toast.error(`Server error: ${response.status}`);
                     }
                 } catch (err) {
                     toast.error(`Gagal sinkronisasi: ${err.message}`);

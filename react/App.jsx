@@ -229,7 +229,12 @@ function App() {
     };
 
     if (!isLoggedIn) {
-        return <Login onLoginSuccess={handleLoginSuccess} />;
+        return (
+            <ToastProvider>
+                <Login onLoginSuccess={handleLoginSuccess} />
+                <ToastContainer />
+            </ToastProvider>
+        );
     }
 
     return (

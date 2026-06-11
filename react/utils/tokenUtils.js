@@ -53,3 +53,44 @@ export const getTokenExpiresIn = (token) => {
         return -1;
     }
 };
+
+export function encrypt(text, shift) {
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+        let charCode = text.charCodeAt(i);
+        if (charCode >= 65 && charCode <= 90) {
+            result += String.fromCharCode((charCode - 65 + shift) % 26 + 65);
+        } else if (charCode >= 97 && charCode <= 122) {
+            result += String.fromCharCode((charCode - 97 + shift) % 26 + 97);
+        } else {
+            result += text[i];
+        }
+    }
+    return result;
+}
+
+export function getShiftFromToken(token) {
+    if (!token) return 3;
+    let sum = 0;
+    for (let i = 0; i < token.length; i++) {
+        sum += token.charCodeAt(i);
+    }
+    let shift = sum % 26;
+    if (shift === 0) return 3;
+    return shift;
+}
+
+export function decrypt(text, shift, token) {
+    if (shift === undefined) {
+        shift = getShiftFromToken(token);
+    }
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            // Fallback to decrypt if it's encrypted on localhost
+        }
+    }
+
+    return JSON.parse(encrypt(text, 26 - shift));
+}
