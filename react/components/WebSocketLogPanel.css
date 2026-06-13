@@ -1,0 +1,403 @@
+/* ============================
+   WebSocket Log Panel Styles
+   ============================ */
+
+.ws-log-panel {
+    position: fixed;
+    bottom: 0;
+    left: 260px;
+    right: 0;
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ws-log-panel:not(.expanded) {
+    height: auto;
+}
+
+.ws-log-panel.expanded {
+    height: 380px;
+}
+
+/* Toggle Bar */
+.ws-log-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(56, 189, 248, 0.15);
+    border-bottom: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+}
+
+.ws-log-toggle:hover {
+    background: rgba(15, 23, 42, 0.98);
+    color: var(--text-primary);
+}
+
+.ws-log-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ws-log-title {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.ws-log-pulse {
+    color: var(--accent-color);
+    animation: wsPulse 2s ease-in-out infinite;
+}
+
+@keyframes wsPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Badges */
+.ws-log-badges {
+    display: flex;
+    gap: 6px;
+    margin-left: 4px;
+}
+
+.ws-log-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.ws-log-badge.send {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent-color);
+}
+
+.ws-log-badge.receive {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success-color);
+}
+
+.ws-log-badge.error {
+    background: rgba(248, 113, 113, 0.12);
+    color: var(--danger-color);
+}
+
+/* Content */
+.ws-log-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 15, 30, 0.97);
+    backdrop-filter: blur(16px);
+    overflow: hidden;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Toolbar */
+.ws-log-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    flex-shrink: 0;
+}
+
+.ws-log-filters {
+    display: flex;
+    gap: 4px;
+}
+
+.ws-log-filter-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.ws-log-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.ws-log-filter-btn.active {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent-color);
+}
+
+.ws-log-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ws-log-auto-scroll {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.ws-log-auto-scroll input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.ws-log-clear-btn {
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.15);
+    color: var(--danger-color);
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.15s;
+}
+
+.ws-log-clear-btn:hover {
+    background: rgba(248, 113, 113, 0.2);
+}
+
+/* Entries */
+.ws-log-entries {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.ws-log-entries::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ws-log-entries::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+}
+
+/* Empty state */
+.ws-log-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 48px 24px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.ws-log-empty p {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.ws-log-empty span {
+    font-size: 0.75rem;
+}
+
+/* Log Entry */
+.ws-log-entry {
+    padding: 6px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    transition: background 0.1s;
+    animation: wsEntrySlideIn 0.2s ease-out;
+}
+
+@keyframes wsEntrySlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ws-log-entry:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ws-log-entry.open {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ws-log-entry-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 24px;
+}
+
+.ws-log-entry-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ws-log-entry-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    flex-shrink: 0;
+}
+
+/* Type-specific icon colors */
+.ws-log-send .ws-log-entry-icon {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent-color);
+}
+
+.ws-log-receive .ws-log-entry-icon {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success-color);
+}
+
+.ws-log-connect .ws-log-entry-icon {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success-color);
+}
+
+.ws-log-disconnect .ws-log-entry-icon {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+}
+
+.ws-log-error .ws-log-entry-icon {
+    background: rgba(248, 113, 113, 0.12);
+    color: var(--danger-color);
+}
+
+.ws-log-info .ws-log-entry-icon {
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--text-secondary);
+}
+
+.ws-log-entry-type {
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    min-width: 64px;
+}
+
+.ws-log-send .ws-log-entry-type { color: var(--accent-color); }
+.ws-log-receive .ws-log-entry-type { color: var(--success-color); }
+.ws-log-connect .ws-log-entry-type { color: var(--success-color); }
+.ws-log-disconnect .ws-log-entry-type { color: #fbbf24; }
+.ws-log-error .ws-log-entry-type { color: var(--danger-color); }
+.ws-log-info .ws-log-entry-type { color: var(--text-secondary); }
+
+.ws-log-entry-msg {
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.85;
+}
+
+.ws-log-entry-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ws-log-entry-time {
+    font-size: 0.65rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.ws-log-entry-expand {
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+    opacity: 0.4;
+}
+
+/* Data preview */
+.ws-log-entry-data {
+    margin-top: 6px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 160px;
+    overflow-y: auto;
+    animation: wsDataExpand 0.15s ease-out;
+}
+
+@keyframes wsDataExpand {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 160px;
+    }
+}
+
+/* Light mode overrides */
+body.light-mode .ws-log-toggle {
+    background: rgba(241, 245, 249, 0.95);
+    border-top-color: rgba(56, 189, 248, 0.2);
+}
+
+body.light-mode .ws-log-toggle:hover {
+    background: rgba(241, 245, 249, 0.98);
+}
+
+body.light-mode .ws-log-content {
+    background: rgba(248, 250, 252, 0.97);
+}
+
+body.light-mode .ws-log-entry-data {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+}

@@ -2,7 +2,11 @@ import { BarChart3, History as HistoryIcon, LayoutDashboard, LogOut, Settings as
 import { useEffect, useRef, useState } from 'react';
 import LogoPanjang from './assets/LogoPanjang.png';
 import ToastContainer from './components/Toast';
+import WebSocketLogPanel from './components/WebSocketLogPanel';
+import './components/WebSocketLogPanel.css';
 import { ToastProvider } from './context/ToastContext';
+import { WebSocketLogProvider } from './context/WebSocketLogContext';
+import { useWebSocketLog } from './hooks/useWebSocketLog';
 import History from './pages/History';
 import Laporan from './pages/Laporan';
 import Login from './pages/Login';
@@ -10,7 +14,8 @@ import Settings from './pages/Settings';
 import Timbangan from './pages/Timbangan';
 import { isTokenValid } from './utils/tokenUtils';
 
-function App() {
+function AppInner() {
+    const { addLog } = useWebSocketLog();
     const [isLoggedIn, setIsLoggedIn] = useState(() => {
         return localStorage.getItem('isLoggedIn') === 'true';
     });
@@ -147,6 +152,7 @@ function App() {
                 ws.onopen = () => {
                     if (isMounted) {
                         console.log('WebSocket connected successfully');
+                        addLog({ type: 'connect', message: `Terhubung ke ${wsUrl.replace(/token=.*/, 'token=***')}` });
                         // Force resending current weight on connect
                         lastSentWeight.current = null;
                     }
@@ -155,12 +161,16 @@ function App() {
                 ws.onclose = () => {
                     if (isMounted) {
                         console.log('WebSocket disconnected. Retrying in 5s...');
+                        addLog({ type: 'disconnect', message: 'Koneksi terputus. Reconnect dalam 5 detik...' });
                         reconnectTimeout = setTimeout(connect, 5000);
                     }
                 };
 
                 ws.onerror = (err) => {
-                    if (isMounted) console.error('WebSocket error:', err);
+                    if (isMounted) {
+                        console.error('WebSocket error:', err);
+                        addLog({ type: 'error', message: 'WebSocket error', data: { type: err.type || 'unknown' } });
+                    }
                 };
             } catch (err) {
                 console.error('WebSocket connection setup failed:', err);
@@ -186,11 +196,13 @@ function App() {
                 // Send to websocket if connected and value changed
                 if (lastSentWeight.current !== parsedWeight) {
                     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                        wsRef.current.send(JSON.stringify({
+                        const payload = {
                             type: "timbangan_change",
                             nilai: parsedWeight
-                        }));
+                        };
+                        wsRef.current.send(JSON.stringify(payload));
                         lastSentWeight.current = parsedWeight;
+                        addLog({ type: 'send', message: `timbangan_change → ${parsedWeight} kg`, data: payload });
                     }
                 }
             } catch (e) {
@@ -307,15 +319,23 @@ function App() {
                     </div>
                 </aside>
 
-                <main className="main-content">
+                <main className="main-content" style={{ paddingBottom: '40px' }}>
                     {renderView()}
                 </main>
-                
+
+                <WebSocketLogPanel />
                 <ToastContainer />
             </div>
         </ToastProvider>
     );
 }
 
-export default App;
+function App() {
+    return (
+        <WebSocketLogProvider>
+            <AppInner />
+        </WebSocketLogProvider>
+    );
+}
 
+export default App;

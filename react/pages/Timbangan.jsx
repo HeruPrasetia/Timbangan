@@ -1,10 +1,12 @@
 import { Hash, Info, Package, Power, RefreshCw, Save, Truck, User, Weight, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '../hooks/useToast';
+import { useWebSocketLog } from '../hooks/useWebSocketLog';
 import { isTokenValid, decrypt } from '../utils/tokenUtils';
 
 const Timbangan = () => {
     const toast = useToast();
+    const { addLog } = useWebSocketLog();
     const [weight, setWeight] = useState(0);
     const [rawData, setRawData] = useState('Menunggu data...');
     const [ports, setPorts] = useState([]);
@@ -254,6 +256,8 @@ const Timbangan = () => {
                         body: serverData
                     });
 
+                    addLog({ type: 'send', message: `HTTP POST → ${serverUrl.replace(/https?:\/\//, '')}`, data: Object.fromEntries(serverData) });
+
                     const responseText = await response.text();
                     let responseData = null;
                     try {
@@ -268,13 +272,17 @@ const Timbangan = () => {
 
                     if (responseData && (responseData.status === 'sukses' || responseData.success)) {
                         toast.success('Data tersinkronisasi ke server!');
+                        addLog({ type: 'receive', message: 'Server sync sukses', data: responseData });
                     } else if (responseData && responseData.pesan) {
                         toast.error(`Server: ${responseData.pesan}`);
+                        addLog({ type: 'error', message: `Server: ${responseData.pesan}`, data: responseData });
                     } else {
                         toast.error(`Server error: ${response.status}`);
+                        addLog({ type: 'error', message: `Server error: HTTP ${response.status}` });
                     }
                 } catch (err) {
                     toast.error(`Gagal sinkronisasi: ${err.message}`);
+                    addLog({ type: 'error', message: `Gagal sinkronisasi: ${err.message}` });
                 }
             } else if (settings?.naylatools_token && !isTokenValid(settings.naylatools_token)) {
                 // Token exists but is invalid/expired
