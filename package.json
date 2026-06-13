@@ -15,7 +15,7 @@
     "build-react": "vite build --outDir dist-react",
     "buildwin": "electron-builder --win nsis --x64",
     "buildmac": "electron-builder build --mac",
-    "rebuild": "electron-rebuild -f -w better-sqlite3"
+    "rebuild": "electron-rebuild -f"
   },
   "keywords": [],
   "author": "NaylaTools Software - heru.praseti@gmail.com - 081234779772",
