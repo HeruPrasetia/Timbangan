@@ -18,10 +18,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm' # TAMBAHKAN INI: Biar build lebih ngebut
 
       - name: Install Dependencies
-        run: npm ci # GANTI INI: Lebih stabil untuk robot
+        run: npm install
 
       - name: Rebuild Native Modules
         run: npm run rebuild
