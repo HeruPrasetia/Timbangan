@@ -10,6 +10,9 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      GYP_MSVS_VERSION: '2022'
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -29,7 +32,6 @@ jobs:
         run: npm run build-react
 
       - name: Build and Release Electron App
-        # Perbaikan argumen publish agar langsung dikenali electron-builder
         run: npm run buildwin -- -p always 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
