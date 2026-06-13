@@ -20,6 +20,7 @@ function App() {
 
     const wsRef = useRef(null);
     const lastSentWeight = useRef(null);
+    const connectedTokenRef = useRef(null);
 
     useEffect(() => {
         // Load initial settings and theme
@@ -101,6 +102,7 @@ function App() {
                 wsRef.current.close();
                 wsRef.current = null;
             }
+            connectedTokenRef.current = null;
             return;
         }
 
@@ -117,11 +119,14 @@ function App() {
                         wsRef.current.close();
                         wsRef.current = null;
                     }
+                    connectedTokenRef.current = null;
                     return;
                 }
 
-                // If already connected with the same token, do nothing
-                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && wsRef.current.url.includes(encodeURIComponent(token))) {
+                // If already connected or connecting with the same token, do nothing
+                if (wsRef.current && 
+                    (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) && 
+                    connectedTokenRef.current === token) {
                     return;
                 }
 
@@ -129,6 +134,7 @@ function App() {
                     wsRef.current.close();
                 }
 
+                connectedTokenRef.current = token;
                 const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                 const wsUrl = isDev 
                     ? `ws://localhost:3003/ws?token=${encodeURIComponent(token)}` 
@@ -139,7 +145,11 @@ function App() {
                 wsRef.current = ws;
 
                 ws.onopen = () => {
-                    if (isMounted) console.log('WebSocket connected successfully');
+                    if (isMounted) {
+                        console.log('WebSocket connected successfully');
+                        // Force resending current weight on connect
+                        lastSentWeight.current = null;
+                    }
                 };
 
                 ws.onclose = () => {
@@ -175,12 +185,12 @@ function App() {
 
                 // Send to websocket if connected and value changed
                 if (lastSentWeight.current !== parsedWeight) {
-                    lastSentWeight.current = parsedWeight;
                     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
                         wsRef.current.send(JSON.stringify({
                             type: "timbangan_change",
                             nilai: parsedWeight
                         }));
+                        lastSentWeight.current = parsedWeight;
                     }
                 }
             } catch (e) {
@@ -200,6 +210,7 @@ function App() {
                 wsRef.current.close();
                 wsRef.current = null;
             }
+            connectedTokenRef.current = null;
         };
     }, [isLoggedIn]);
 
