@@ -23,9 +23,7 @@ function AppInner() {
     const [isConnected, setIsConnected] = useState(false);
     const [theme, setTheme] = useState('dark');
 
-    const wsRef = useRef(null);
-    const lastSentWeight = useRef(null);
-    const connectedTokenRef = useRef(null);
+
 
     useEffect(() => {
         // Load initial settings and theme
@@ -100,131 +98,7 @@ function AppInner() {
         checkTokenValidity();
     }, [isLoggedIn]);
 
-    // WebSocket Connection and Event Handling
-    useEffect(() => {
-        if (!isLoggedIn) {
-            if (wsRef.current) {
-                wsRef.current.close();
-                wsRef.current = null;
-            }
-            connectedTokenRef.current = null;
-            return;
-        }
 
-        let isMounted = true;
-        let reconnectTimeout = null;
-
-        const connect = async () => {
-            try {
-                const settings = await window.electronAPI.getSettings();
-                const token = settings?.naylatools_token;
-
-                if (!token) {
-                    if (wsRef.current) {
-                        wsRef.current.close();
-                        wsRef.current = null;
-                    }
-                    connectedTokenRef.current = null;
-                    return;
-                }
-
-                // If already connected or connecting with the same token, do nothing
-                if (wsRef.current && 
-                    (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) && 
-                    connectedTokenRef.current === token) {
-                    return;
-                }
-
-                if (wsRef.current) {
-                    wsRef.current.close();
-                }
-
-                connectedTokenRef.current = token;
-                const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                const wsUrl = isDev 
-                    ? `ws://localhost:3003/ws?token=${encodeURIComponent(token)}` 
-                    : `wss://ws.naylatools.com/ws?token=${encodeURIComponent(token)}`;
-
-                console.log('Connecting to WebSocket:', wsUrl);
-                const ws = new WebSocket(wsUrl);
-                wsRef.current = ws;
-
-                ws.onopen = () => {
-                    if (isMounted) {
-                        console.log('WebSocket connected successfully');
-                        addLog({ type: 'connect', message: `Terhubung ke ${wsUrl.replace(/token=.*/, 'token=***')}` });
-                        // Force resending current weight on connect
-                        lastSentWeight.current = null;
-                    }
-                };
-
-                ws.onclose = () => {
-                    if (isMounted) {
-                        console.log('WebSocket disconnected. Retrying in 5s...');
-                        addLog({ type: 'disconnect', message: 'Koneksi terputus. Reconnect dalam 5 detik...' });
-                        reconnectTimeout = setTimeout(connect, 5000);
-                    }
-                };
-
-                ws.onerror = (err) => {
-                    if (isMounted) {
-                        console.error('WebSocket error:', err);
-                        addLog({ type: 'error', message: 'WebSocket error', data: { type: err.type || 'unknown' } });
-                    }
-                };
-            } catch (err) {
-                console.error('WebSocket connection setup failed:', err);
-                if (isMounted) reconnectTimeout = setTimeout(connect, 5000);
-            }
-        };
-
-        connect();
-
-        // Listen for weight/port data changes
-        const unsubscribeData = window.electronAPI.onPortData((data) => {
-            if (!data) return;
-            const sanitized = data.replace(/[^\x20-\x7E]/g, '').trim();
-            if (!sanitized || sanitized.length < 8) return;
-            
-            try {
-                let isNegative = sanitized.startsWith('-');
-                let coreValue = sanitized.substring(1, 7);
-                let nilai = parseInt(coreValue);
-                if (isNaN(nilai)) return;
-                const parsedWeight = isNegative ? -nilai : nilai;
-
-                // Send to websocket if connected and value changed
-                if (lastSentWeight.current !== parsedWeight) {
-                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                        const payload = {
-                            type: "timbangan_change",
-                            nilai: parsedWeight
-                        };
-                        wsRef.current.send(JSON.stringify(payload));
-                        lastSentWeight.current = parsedWeight;
-                        addLog({ type: 'send', message: `timbangan_change → ${parsedWeight} kg`, data: payload });
-                    }
-                }
-            } catch (e) {
-                console.error('WebSocket send error:', e);
-            }
-        });
-
-        // Periodically refresh/validate token in case it was updated in Settings
-        const intervalId = setInterval(connect, 5000);
-
-        return () => {
-            isMounted = false;
-            clearInterval(intervalId);
-            if (reconnectTimeout) clearTimeout(reconnectTimeout);
-            unsubscribeData();
-            if (wsRef.current) {
-                wsRef.current.close();
-                wsRef.current = null;
-            }
-            connectedTokenRef.current = null;
-        };
-    }, [isLoggedIn]);
 
     const renderView = () => {
         switch (activeTab) {

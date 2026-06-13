@@ -2,7 +2,7 @@ import { Hash, Info, Package, Power, RefreshCw, Save, Truck, User, Weight, X } f
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '../hooks/useToast';
 import { useWebSocketLog } from '../hooks/useWebSocketLog';
-import { isTokenValid, decrypt } from '../utils/tokenUtils';
+import { decrypt, isTokenValid } from '../utils/tokenUtils';
 
 const Timbangan = () => {
     const toast = useToast();
@@ -14,6 +14,10 @@ const Timbangan = () => {
     const [baudRate, setBaudRate] = useState(9600);
     const [isConnected, setIsConnected] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const wsRef = useRef(null);
+    const lastSentWeight = useRef(null);
+    const connectedTokenRef = useRef(null);
+
 
     // Modal Fields
     const [currentStage, setCurrentStage] = useState(1);
@@ -78,6 +82,92 @@ const Timbangan = () => {
         };
     }, []);
 
+    // WebSocket Connection and Event Handling
+    useEffect(() => {
+        let isMounted = true;
+        let reconnectTimeout = null;
+
+        const connect = async () => {
+            try {
+                const settings = await window.electronAPI.getSettings();
+                const token = settings?.naylatools_token;
+
+                if (!token) {
+                    if (wsRef.current) {
+                        wsRef.current.close();
+                        wsRef.current = null;
+                    }
+                    connectedTokenRef.current = null;
+                    return;
+                }
+
+                // If already connected or connecting with the same token, do nothing
+                if (wsRef.current &&
+                    (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) &&
+                    connectedTokenRef.current === token) {
+                    return;
+                }
+
+                if (wsRef.current) {
+                    wsRef.current.close();
+                }
+
+                connectedTokenRef.current = token;
+                const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const wsUrl = isDev
+                    ? `ws://localhost:3003/ws?token=${encodeURIComponent(token)}`
+                    : `wss://ws.naylatools.com/ws?token=${encodeURIComponent(token)}`;
+
+                console.log('Connecting to WebSocket:', wsUrl);
+                const ws = new WebSocket(wsUrl);
+                wsRef.current = ws;
+
+                ws.onopen = () => {
+                    if (isMounted) {
+                        console.log('WebSocket connected successfully');
+                        addLog({ type: 'connect', message: `Terhubung ke ${wsUrl.replace(/token=.*/, 'token=***')}` });
+                        // Force resending current weight on connect
+                        lastSentWeight.current = null;
+                    }
+                };
+
+                ws.onclose = () => {
+                    if (isMounted) {
+                        console.log('WebSocket disconnected. Retrying in 5s...');
+                        addLog({ type: 'disconnect', message: 'Koneksi terputus. Reconnect dalam 5 detik...' });
+                        reconnectTimeout = setTimeout(connect, 5000);
+                    }
+                };
+
+                ws.onerror = (err) => {
+                    if (isMounted) {
+                        console.error('WebSocket error:', err);
+                        addLog({ type: 'error', message: 'WebSocket error', data: { type: err.type || 'unknown' } });
+                    }
+                };
+            } catch (err) {
+                console.error('WebSocket connection setup failed:', err);
+                if (isMounted) reconnectTimeout = setTimeout(connect, 5000);
+            }
+        };
+
+        connect();
+
+        // Periodically refresh/validate token in case it was updated in Settings
+        const intervalId = setInterval(connect, 5000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+            connectedTokenRef.current = null;
+        };
+    }, []);
+
     const refreshPorts = async () => {
         const list = await window.electronAPI.listPorts();
         setPorts(list);
@@ -100,6 +190,7 @@ const Timbangan = () => {
     };
 
     const updateDisplay = (data) => {
+        console.log(data);
         if (!data) return;
         const sanitized = data.replace(/[^\x20-\x7E]/g, '').trim();
         if (sanitized) {
@@ -112,9 +203,22 @@ const Timbangan = () => {
             let coreValue = sanitized.substring(1, 7);
             let nilai = parseInt(coreValue);
             if (isNaN(nilai)) return;
-            setWeight(isNegative ? -nilai : nilai);
+            const parsedWeight = isNegative ? -nilai : nilai;
+            setWeight(parsedWeight);
+
+            if (lastSentWeight.current !== parsedWeight) {
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                    const payload = {
+                        type: "timbangan_change",
+                        nilai: parsedWeight
+                    };
+                    wsRef.current.send(JSON.stringify(payload));
+                    lastSentWeight.current = parsedWeight;
+                    addLog({ type: 'send', message: `timbangan_change → ${parsedWeight} kg`, data: payload });
+                }
+            }
         } catch (e) {
-            console.error('Error parsing weight:', e);
+            console.error('Error parsing weight or sending to WebSocket:', e);
         }
     };
 
