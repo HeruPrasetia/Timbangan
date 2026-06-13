@@ -6,7 +6,7 @@ on:
 
 jobs:
   release:
-    # 1. UBAH DI SINI: Jangan pakai windows-latest, kunci ke windows-2022 biar stabil
+    # Mengunci runner ke Windows Server 2022 yang stabil
     runs-on: windows-2022
     permissions:
       contents: write
@@ -24,21 +24,19 @@ jobs:
         with:
           node-version: 20
 
-      # 2. TAMBAHKAN STEP INI: Mengarahkan compiler C++ langsung ke lokasi Visual Studio 2022
-      - name: Set up VCVarsall (C++ Build Tools)
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          toolset: '14.3' # Ini kode toolset untuk VS 2022
-
+      # Menggunakan MSBuild resmi milik Microsoft Actions
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
       - name: Install Dependencies
         run: npm install
 
-      # 3. UBAH DI SINI: Tambahkan flag msvs_version langsung pas rebuild native modules
+      # Bypass pencarian PowerShell yang overflow dengan memanggil vcvarsall.bat langsung di CMD
       - name: Rebuild Native Modules
-        run: npm run rebuild -- --msvs_version=2022
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          npm run rebuild -- --msvs_version=2022
         env:
           npm_config_msvs_version: '2022'
 
