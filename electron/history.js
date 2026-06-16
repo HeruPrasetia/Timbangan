@@ -152,6 +152,22 @@ function setupHistoryHandlers() {
         }
     });
 
+    ipcMain.handle('update-docnumber', async (event, data) => {
+        try {
+            const { DocNumberReff, doc_number } = data;
+            console.log("Docnumber dari server => ", DocNumberReff);
+            console.log("DocNumber data lokal => ", doc_number);
+            const stmt = db.prepare(`UPDATE weights SET DocNumberReff = @DocNumberReff WHERE doc_number = @doc_number`);
+
+            stmt.run({ DocNumberReff, doc_number });
+
+            return { success: true };
+        } catch (error) {
+            console.error('DB Update Error:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
     ipcMain.handle('export-to-excel', async (event, params) => {
         try {
             // Lazy load ExcelJS to speed up app startup

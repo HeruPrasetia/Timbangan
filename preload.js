@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Database methods
     saveWeight: (data) => ipcRenderer.invoke('save-weight', data),
+    updateDocNumber: (data) => ipcRenderer.invoke('update-docnumber', data),
     getHistory: (params) => ipcRenderer.invoke('get-history', params),
     getHistoryCount: (params) => ipcRenderer.invoke('get-history-count', params),
     getHistorySummary: (params) => ipcRenderer.invoke('get-history-summary', params),

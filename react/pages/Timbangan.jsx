@@ -1,8 +1,67 @@
 import { Hash, Info, Package, Power, RefreshCw, Save, Truck, User, Weight, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import Select from 'react-select';
+import { searchDatabase } from '../Database';
 import { useToast } from '../hooks/useToast';
 import { useWebSocketLog } from '../hooks/useWebSocketLog';
-import { decrypt, isTokenValid } from '../utils/tokenUtils';
+import { apiGo, isTokenValid } from '../utils/tokenUtils';
+
+const customSelectStyles = {
+    control: (provided, state) => ({
+        ...provided,
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        borderColor: state.isFocused ? 'var(--accent-color)' : 'var(--border-color)',
+        borderRadius: state.menuIsOpen ? '12px 12px 0 0' : '12px',
+        padding: '2px',
+        boxShadow: state.isFocused ? '0 0 0 1px var(--accent-color)' : 'none',
+        '&:hover': {
+            borderColor: 'var(--accent-color)'
+        }
+    }),
+    menu: (provided) => ({
+        ...provided,
+        backgroundColor: 'var(--card-bg)',
+        border: '1px solid var(--accent-color)',
+        borderTop: 'none',
+        borderRadius: '0 0 12px 12px',
+        margin: 0,
+        overflow: 'hidden',
+        zIndex: 9999,
+        boxSizing: 'border-box',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--accent-color)'
+    }),
+    menuList: (provided) => ({
+        ...provided,
+        padding: 0
+    }),
+    option: (provided, state) => ({
+        ...provided,
+        backgroundColor: state.isSelected
+            ? 'var(--accent-color)'
+            : state.isFocused
+                ? 'rgba(148, 163, 184, 0.1)'
+                : 'transparent',
+        color: state.isSelected ? '#0f172a' : 'var(--text-primary)',
+        cursor: 'pointer',
+        padding: '10px 10px',
+        '&:active': {
+            backgroundColor: 'var(--accent-color)',
+            color: '#0f172a'
+        }
+    }),
+    singleValue: (provided) => ({
+        ...provided,
+        color: 'var(--text-primary)'
+    }),
+    input: (provided) => ({
+        ...provided,
+        color: 'var(--text-primary)'
+    }),
+    placeholder: (provided) => ({
+        ...provided,
+        color: 'var(--text-secondary)'
+    })
+};
 
 const Timbangan = () => {
     const toast = useToast();
@@ -27,12 +86,15 @@ const Timbangan = () => {
     const [notedWeight, setNotedWeight] = useState('');
     const [trxType, setTrxType] = useState('Pembelian');
     const [refaksi, setRefaksi] = useState(0);
+    const [cardId, setCardId] = useState(0);
+    const [itemId, setItemId] = useState(0);
     const [pendingRecords, setPendingRecords] = useState([]);
     const [selectedPendingId, setSelectedPendingId] = useState('');
     const [selectedPendingData, setSelectedPendingData] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [partyList, setPartyList] = useState([]);
-    const [showPartyLookup, setShowPartyLookup] = useState(false);
+    const [dataCard, setDataCard] = useState([]);
+    const [dataItem, setDataItem] = useState([]);
 
     const lastParsedTime = useRef(0);
 
@@ -190,7 +252,6 @@ const Timbangan = () => {
     };
 
     const updateDisplay = (data) => {
-        console.log(data);
         if (!data) return;
         const sanitized = data.replace(/[^\x20-\x7E]/g, '').trim();
         if (sanitized) {
@@ -208,10 +269,7 @@ const Timbangan = () => {
 
             if (lastSentWeight.current !== parsedWeight) {
                 if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                    const payload = {
-                        type: "timbangan_change",
-                        nilai: parsedWeight
-                    };
+                    const payload = { type: "timbangan_change", nilai: parsedWeight };
                     wsRef.current.send(JSON.stringify(payload));
                     lastSentWeight.current = parsedWeight;
                     addLog({ type: 'send', message: `timbangan_change → ${parsedWeight} kg`, data: payload });
@@ -234,14 +292,20 @@ const Timbangan = () => {
         }
     };
 
-    const openSaveModal = () => {
+    const openSaveModal = async () => {
         // Reset Modal
+        let Card = await searchDatabase("MasterPelanggan", {});
+        let Item = await searchDatabase("MasterItem", {});
+        setDataCard(Card);
+        setDataItem(Item);
         setPartyName('');
         setProductName('');
         setPlateNumber('');
         setNotedWeight('');
         setTrxType('Pembelian');
         setRefaksi(0);
+        setCardId(0);
+        setItemId(0);
         setCurrentStage(1);
         setSelectedPendingId('');
         setSelectedPendingData(null);
@@ -270,6 +334,8 @@ const Timbangan = () => {
             setPlateNumber(record.plate_number);
             setTrxType(record.trx_type);
             setNotedWeight(record.noted_weight || '');
+            setItemId(record.ItemID || 0);
+            setCardId(record.CardID || 0);
         } else {
             setSelectedPendingData(null);
         }
@@ -286,7 +352,9 @@ const Timbangan = () => {
             price: 0,
             trx_type: trxType,
             refaksi: refaksi,
-            notes: ''
+            notes: '',
+            CardID: cardId,
+            ItemID: itemId
         };
 
         let startWeight = 0;
@@ -315,6 +383,7 @@ const Timbangan = () => {
         }
 
         const result = await window.electronAPI.saveWeight(data);
+        console.log(result);
         if (result.success) {
             setIsModalOpen(false);
             toast.success('Berhasil disimpan!');
@@ -329,54 +398,36 @@ const Timbangan = () => {
                     serverData.append('DocType', trxType == "Pembelian" ? "Masuk" : "Keluar");
                     // Format date as YYYY-mm-dd
                     const docDate = new Date().toISOString().split('T')[0];
-                    serverData.append('DocDate', docDate);
-                    serverData.append('CardID', 0);
-                    serverData.append('CardName', partyName);
-                    serverData.append('ItemID', 0);
-                    serverData.append('ItemName', productName);
-                    serverData.append('Qty', data.weight);
-                    serverData.append('QtyUnit', 'kg');
-                    serverData.append('UnitName', 'kg');
-                    serverData.append('Price', data.price);
-                    serverData.append('Total', data.weight * data.price);
-                    serverData.append('NotaWeight', data.noted_weight);
-                    serverData.append('StartWeight', startWeight);
-                    serverData.append('PlatNomer', plateNumber);
-                    serverData.append('Driver', data.driver_name);
-                    serverData.append('Kendaraan', plateNumber);
-                    serverData.append('act', 'input');
 
-                    // Determine server URL
-                    const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                    const serverUrl = isDev
-                        ? 'http://localhost:3002/transTimbanganCrud'
-                        : 'https://apigo.naylatools.com/transTimbanganCrud';
-
-                    const response = await fetch(serverUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${settings.naylatools_token}`
-                        },
-                        body: serverData
+                    let responseData = await apiGo("transTimbanganCrud", {
+                        'act': currentStage == 1 ? 'input' : 'update',
+                        'DocType': trxType == "Pembelian" ? "Masuk" : "Keluar",
+                        'DocDate': docDate,
+                        'CardID': cardId || 0,
+                        'CardName': partyName,
+                        'ItemID': itemId || 0,
+                        'ItemName': productName,
+                        'Qty': data.weight,
+                        'QtyUnit': 'kg',
+                        'UnitName': 'kg',
+                        'Price': data.price,
+                        'Total': data.weight * data.price,
+                        'NotaWeight': data.noted_weight,
+                        'StartWeight': startWeight,
+                        'EndWeight': weight,
+                        'PlatNomer': plateNumber,
+                        'Driver': data.driver_name,
+                        'Kendaraan': plateNumber,
+                        'DocNumber': result.DocNumber,
+                        'Refraksi': refaksi,
                     });
 
-                    addLog({ type: 'send', message: `HTTP POST → ${serverUrl.replace(/https?:\/\//, '')}`, data: Object.fromEntries(serverData) });
-
-                    const responseText = await response.text();
-                    let responseData = null;
-                    try {
-                        responseData = decrypt(responseText, undefined, settings.naylatools_token);
-                    } catch (decErr) {
-                        try {
-                            responseData = JSON.parse(responseText);
-                        } catch (jsonErr) {
-                            // Response is not JSON
-                        }
-                    }
+                    console.log(responseData);
 
                     if (responseData && (responseData.status === 'sukses' || responseData.success)) {
                         toast.success('Data tersinkronisasi ke server!');
                         addLog({ type: 'receive', message: 'Server sync sukses', data: responseData });
+                        if (responseData.DocNumber) await window.electronAPI.updateDocNumber({ DocNumberReff: responseData.DocNumber, doc_number: result.DocNumber });
                     } else if (responseData && responseData.pesan) {
                         toast.error(`Server: ${responseData.pesan}`);
                         addLog({ type: 'error', message: `Server: ${responseData.pesan}`, data: responseData });
@@ -439,8 +490,7 @@ const Timbangan = () => {
                             <span className="weight-unit">kg</span>
                         </div>
                         <button className="primary-btn secondary" onClick={openSaveModal}>
-                            <Save size={18} />
-                            Simpan Hasil
+                            <Save size={18} /> Simpan Hasil
                         </button>
                     </section>
 
@@ -453,14 +503,9 @@ const Timbangan = () => {
                 <aside className="settings-panel">
                     <div className="settings-card">
                         <label>Configuration</label>
-
                         <div className="input-group">
                             <span>Serial Port</span>
-                            <select
-                                value={selectedPort}
-                                onChange={(e) => setSelectedPort(e.target.value)}
-                                disabled={isConnected}
-                            >
+                            <select value={selectedPort} onChange={(e) => setSelectedPort(e.target.value)} disabled={isConnected}>
                                 <option value="" disabled>Pilih Port...</option>
                                 {ports.map((port) => (
                                     <option key={port.path} value={port.path}>
@@ -472,11 +517,7 @@ const Timbangan = () => {
 
                         <div className="input-group">
                             <span>Baud Rate</span>
-                            <select
-                                value={baudRate}
-                                onChange={(e) => setBaudRate(e.target.value)}
-                                disabled={isConnected}
-                            >
+                            <select value={baudRate} onChange={(e) => setBaudRate(e.target.value)} disabled={isConnected}>
                                 <option value="9600">9600</option>
                                 <option value="19200">19200</option>
                                 <option value="38400">38400</option>
@@ -485,12 +526,8 @@ const Timbangan = () => {
                             </select>
                         </div>
 
-                        <button
-                            className={`primary-btn ${isConnected ? 'disconnect' : ''}`}
-                            onClick={handleConnect}
-                        >
-                            <Power size={18} />
-                            {isConnected ? 'Putuskan' : 'Hubungkan'}
+                        <button className={`primary-btn ${isConnected ? 'disconnect' : ''}`} onClick={handleConnect}>
+                            <Power size={18} /> {isConnected ? 'Putuskan' : 'Hubungkan'}
                         </button>
                     </div>
                 </aside>
@@ -507,56 +544,30 @@ const Timbangan = () => {
 
                         <div className="modal-body">
                             <div className="modal-tabs-mini">
-                                <button
-                                    className={`stage-btn ${currentStage === 1 ? 'active' : ''}`}
-                                    onClick={() => handleStageChange(1)}
-                                >
-                                    Timbang Pertama
-                                </button>
-                                <button
-                                    className={`stage-btn ${currentStage === 2 ? 'active' : ''}`}
-                                    onClick={() => handleStageChange(2)}
-                                >
-                                    Timbang Kedua
-                                </button>
+                                <button className={`stage-btn ${currentStage === 1 ? 'active' : ''}`} onClick={() => handleStageChange(1)}>Timbang Pertama</button>
+                                <button className={`stage-btn ${currentStage === 2 ? 'active' : ''}`} onClick={() => handleStageChange(2)}>Timbang Kedua</button>
                             </div>
 
                             {currentStage === 2 && (
                                 <div className="pending-area">
                                     <label>Pilih Data Timbang Pertama</label>
-                                    <div className="searchable-group">
-                                        <input
-                                            type="text"
-                                            className="modal-search-input"
-                                            placeholder="Cari Plat / Doc / Pelanggan..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                        />
-                                        <select
-                                            className="modal-select"
-                                            value={selectedPendingId}
-                                            onChange={handlePendingSelect}
-                                        >
-                                            <option value="">-- {pendingRecords.filter(r =>
-                                                r.doc_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                r.plate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                r.party_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                (r.product_name && r.product_name.toLowerCase().includes(searchTerm.toLowerCase()))
-                                            ).length} Rekaman Ditemukan --</option>
-                                            {pendingRecords
-                                                .filter(r =>
-                                                    r.doc_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                    r.plate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                    r.party_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                    (r.product_name && r.product_name.toLowerCase().includes(searchTerm.toLowerCase()))
-                                                )
-                                                .map(r => (
-                                                    <option key={r.id} value={r.id}>
-                                                        {r.doc_number} - 🚚 {r.plate_number} - {r.product_name} ({Math.round(r.weight_1)} kg)
-                                                    </option>
-                                                ))}
-                                        </select>
-                                    </div>
+                                    <Select className="modal-select"
+                                        options={pendingRecords.map((item) => ({
+                                            value: item.id,
+                                            label: `${item.doc_number} - 🚚 ${item.plate_number} - ${item.product_name} (${Math.round(item.weight_1)} kg)`
+                                        }))}
+                                        value={selectedPendingId ? {
+                                            value: selectedPendingId,
+                                            label: pendingRecords.find(r => r.id === parseInt(selectedPendingId))
+                                                ? `${pendingRecords.find(r => r.id === parseInt(selectedPendingId)).doc_number} - 🚚 ${pendingRecords.find(r => r.id === parseInt(selectedPendingId)).plate_number} - ${pendingRecords.find(r => r.id === parseInt(selectedPendingId)).product_name} (${Math.round(pendingRecords.find(r => r.id === parseInt(selectedPendingId)).weight_1)} kg)`
+                                                : ''
+                                        } : null}
+                                        onChange={(option) => handlePendingSelect({ target: { value: option ? option.value : '' } })}
+                                        placeholder="Cari Plat / Doc / Pelanggan..."
+                                        styles={customSelectStyles}
+                                        isClearable
+                                        isSearchable
+                                    />
                                 </div>
                             )}
 
@@ -566,7 +577,7 @@ const Timbangan = () => {
                                     <div className="value">{Math.round(weight)} kg</div>
                                 </div>
                                 {currentStage === 2 && (
-                                    <>
+                                    <Fragment>
                                         <div className="modal-weight-preview secondary">
                                             <span className="label">Berat Pertama</span>
                                             <div className="value">{Math.round(selectedPendingData?.weight_1 || 0)} kg</div>
@@ -575,115 +586,100 @@ const Timbangan = () => {
                                             <span className="label">Berat Bersih</span>
                                             <div className="value">{calculateNetPreview()} kg</div>
                                         </div>
-                                    </>
+                                    </Fragment>
                                 )}
                             </div>
 
                             <div className="input-grid">
-                                <div style={{ position: 'relative' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                        <label style={{ marginBottom: 0 }}><User size={14} /> Supplier / Pelanggan</label>
-                                        <button
-                                            type="button"
-                                            className="link-btn"
-                                            onClick={() => setShowPartyLookup(!showPartyLookup)}
-                                            style={{ fontSize: '0.7rem', color: 'var(--accent-color)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                                        >
-                                            {showPartyLookup ? 'Tutup' : 'Cari'}
-                                        </button>
-                                    </div>
-                                    {showPartyLookup ? (
-                                        <select
-                                            className="modal-select"
-                                            size="5"
-                                            onChange={(e) => {
-                                                setPartyName(e.target.value);
-                                                setShowPartyLookup(false);
-                                            }}
-                                            style={{ marginBottom: '8px' }}
-                                        >
-                                            <option value="" disabled>-- Pilih dari Database --</option>
-                                            {partyList.map((name, i) => (
-                                                <option key={i} value={name}>{name}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            placeholder="Contoh: Budi Santoso"
-                                            value={partyName}
-                                            onChange={(e) => setPartyName(e.target.value)}
-                                            disabled={currentStage === 2}
-                                        />
-                                    )}
-                                </div>
                                 <div className="input-group">
-                                    <label><Package size={14} /> Jenis Barang</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Contoh: Jagung Basah"
-                                        value={productName}
-                                        onChange={(e) => setProductName(e.target.value)}
-                                        disabled={currentStage === 2}
+                                    <label style={{ marginBottom: 0 }}><User size={14} /> Supplier / Pelanggan</label>
+                                    <Select
+                                        className="modal-select"
+                                        options={dataCard.map((item) => ({
+                                            value: item.ID,
+                                            label: `${item.MemberCode} - ${item.Nama} (${item.Telp})`,
+                                            itemData: item
+                                        }))}
+                                        value={cardId ? {
+                                            value: cardId,
+                                            label: dataCard.find(c => c.ID === cardId)
+                                                ? `${dataCard.find(c => c.ID === cardId).MemberCode} - ${dataCard.find(c => c.ID === cardId).Nama} (${dataCard.find(c => c.ID === cardId).Telp})`
+                                                : partyName
+                                        } : null}
+                                        onChange={(option) => {
+                                            if (option) {
+                                                setCardId(option.value);
+                                                setPartyName(option.itemData.Nama);
+                                            } else {
+                                                setCardId(0);
+                                                setPartyName('');
+                                            }
+                                        }}
+                                        placeholder="Cari Pelanggan / Suplier..."
+                                        styles={customSelectStyles}
+                                        isClearable
+                                        isSearchable
                                     />
                                 </div>
+
+                                <div className="input-group">
+                                    <label><Package size={14} /> Jenis Barang</label>
+                                    <Select
+                                        className="modal-select"
+                                        options={dataItem.map((item) => ({
+                                            value: item.ID,
+                                            label: `${item.Code} - ${item.Nama}`,
+                                            itemData: item
+                                        }))}
+                                        value={itemId ? {
+                                            value: itemId,
+                                            label: dataItem.find(i => i.ID === itemId)
+                                                ? `${dataItem.find(i => i.ID === itemId).Code} - ${dataItem.find(i => i.ID === itemId).Nama}`
+                                                : productName
+                                        } : null}
+                                        onChange={(option) => {
+                                            if (option) {
+                                                setItemId(option.value);
+                                                setProductName(option.itemData.Nama);
+                                            } else {
+                                                setItemId(0);
+                                                setProductName('');
+                                            }
+                                        }}
+                                        placeholder="Cari Barang ..."
+                                        styles={customSelectStyles}
+                                        isClearable
+                                        isSearchable
+                                    />
+                                </div>
+
                                 <div className="input-group">
                                     <label><Info size={14} /> Jenis Transaksi</label>
-                                    <select
-                                        value={trxType}
-                                        onChange={(e) => setTrxType(e.target.value)}
-                                        disabled={currentStage === 2}
-                                    >
+                                    <select value={trxType} onChange={(e) => setTrxType(e.target.value)} disabled={currentStage === 2}>
                                         <option value="Pembelian">Pembelian</option>
                                         <option value="Penjualan">Penjualan</option>
                                     </select>
                                 </div>
                                 <div className="input-group">
                                     <label><Truck size={14} /> Nomor Plat Kendaraan</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Contoh: B 1234 ABC"
-                                        value={plateNumber}
-                                        onChange={(e) => setPlateNumber(e.target.value)}
-                                        disabled={currentStage === 2}
-                                    />
+                                    <input type="text" placeholder="Contoh: B 1234 ABC" value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} disabled={currentStage === 2} />
                                 </div>
                                 <div className="input-group">
                                     <label><Hash size={14} /> Berat Surat Jalan (kg)</label>
-                                    <input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={notedWeight}
-                                        onChange={(e) => setNotedWeight(e.target.value)}
-                                    />
+                                    <input type="number" placeholder="0.00" value={notedWeight} onChange={(e) => setNotedWeight(e.target.value)} />
                                 </div>
                                 {currentStage === 2 && (
                                     <div className="input-group">
                                         <label><Weight size={14} /> Refaksi (%)</label>
-                                        <input
-                                            type="number"
-                                            placeholder="0"
-                                            value={refaksi}
-                                            onChange={(e) => setRefaksi(e.target.value)}
-                                        />
+                                        <input type="number" placeholder="0" value={refaksi} onChange={(e) => setRefaksi(e.target.value)} />
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         <div className="modal-footer">
-                            <button
-                                className="primary-btn secondary"
-                                onClick={() => setIsModalOpen(false)}
-                            >
-                                Batal
-                            </button>
-                            <button
-                                className="primary-btn"
-                                onClick={handleConfirmSave}
-                            >
-                                Konfirmasi Simpan
-                            </button>
+                            <button className="primary-btn secondary" onClick={() => setIsModalOpen(false)}>Batal</button>
+                            <button className="primary-btn" onClick={handleConfirmSave}>Konfirmasi Simpan</button>
                         </div>
                     </div>
                 </div>

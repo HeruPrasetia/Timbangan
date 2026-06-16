@@ -80,6 +80,8 @@ function migrateDatabase() {
         { name: 'refaksi', type: 'float DEFAULT 0' },
         { name: 'timestamp_2', type: 'DATETIME' },
         { name: 'DocNumberReff', type: 'TEXT default null' },
+        { name: 'CardID', type: 'INTEGER default 0' },
+        { name: 'ItemID', type: 'INTEGER default 0' },
     ];
 
     requiredColumns.forEach(col => {

@@ -7,19 +7,24 @@ import { jwtDecode } from 'jwt-decode';
  */
 export const isTokenValid = (token) => {
     if (!token) return false;
-    
+
+    // Check if it's a JWT (has 3 parts separated by dots)
+    if (typeof token !== 'string' || token.split('.').length !== 3) {
+        return true; // Not a JWT, assume valid custom token
+    }
+
     try {
         const decoded = jwtDecode(token);
-        
+
         // Check if token has exp claim
         if (!decoded.exp) {
             return true; // Token has no expiration, consider it valid
         }
-        
+
         // Convert exp (seconds) to milliseconds and compare with current time
         const expirationTime = decoded.exp * 1000;
         const currentTime = Date.now();
-        
+
         // Token is valid if expiration time is in the future
         return expirationTime > currentTime;
     } catch (error) {
@@ -35,18 +40,18 @@ export const isTokenValid = (token) => {
  */
 export const getTokenExpiresIn = (token) => {
     if (!token) return -1;
-    
+
     try {
         const decoded = jwtDecode(token);
-        
+
         if (!decoded.exp) {
             return Infinity; // No expiration
         }
-        
+
         const expirationTime = decoded.exp * 1000;
         const currentTime = Date.now();
         const secondsRemaining = Math.ceil((expirationTime - currentTime) / 1000);
-        
+
         return secondsRemaining > 0 ? secondsRemaining : 0;
     } catch (error) {
         console.error('Token expiration check error:', error);
@@ -93,4 +98,43 @@ export function decrypt(text, shift, token) {
     }
 
     return JSON.parse(encrypt(text, 26 - shift));
+}
+
+
+export const apiGo = (url, data, debug = false, isRaw = false) => {
+    const Token = localStorage.getItem("TokenNaylaTools");
+    const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const host = isDev ? 'http://localhost:3002/' : 'https://apigo.naylatools.com/';
+    try {
+        return new Promise((resolve, reject) => {
+            fetch(encodeURI(host + url), {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Token}`
+                },
+                body: isRaw ? data : jsonToForm(data),
+            }).then(response => response.text()).then(hasil => {
+                resolve(decrypt(hasil));
+            }).catch((error) => {
+                reject(error)
+            });
+        });
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+export const isJson = (str) => {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
+function jsonToForm(data) {
+    const formData = new FormData();
+    for (let dt in data) formData.append(dt, data[dt]);
+    return formData;
 }

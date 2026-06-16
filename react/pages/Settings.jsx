@@ -118,19 +118,24 @@ const Settings = () => {
 
     const handleSaveGeneral = async () => {
         setLoading(true);
-        const result = await window.electronAPI.saveSettings({
-            google_script_url: googleScriptUrl,
-            app_theme: appTheme,
-            naylatools_token: naylaToolsToken
-        });
-        if (result.success) {
-            // Apply theme
-            if (appTheme === 'light') {
-                document.body.classList.add('light-mode');
-            } else {
-                document.body.classList.remove('light-mode');
+        try {
+            const result = await window.electronAPI.saveSettings({
+                google_script_url: googleScriptUrl,
+                app_theme: appTheme,
+                naylatools_token: naylatoolsToken
+            });
+            if (result.success) {
+                // Apply theme
+                if (appTheme === 'light') {
+                    document.body.classList.add('light-mode');
+                } else {
+                    document.body.classList.remove('light-mode');
+                }
+                alert('Pengaturan General berhasil disimpan!');
             }
-            alert('Pengaturan General berhasil disimpan!');
+        } catch (error) {
+            console.error(error);
+            alert('Terjadi kesalahan saat menyimpan pengaturan.');
         }
         setLoading(false);
     };

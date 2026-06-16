@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, Lock, LogIn, User } from 'lucide-react';
+import { useState } from 'react';
 import LogoPanjang from '../assets/LogoPanjang.png';
 import { useToast } from '../hooks/useToast';
 import { decrypt } from '../utils/tokenUtils';
@@ -19,6 +19,9 @@ function Login({ onLoginSuccess }) {
 
         if (username === 'admin') {
             if (password === 'naylatools') {
+                // Hapus token lama jika ada agar tidak bentrok
+                await window.electronAPI.saveSettings({ naylatools_token: '' });
+                localStorage.removeItem("TokenNaylaTools");
                 onLoginSuccess();
             } else {
                 setError('Username atau password salah.');
@@ -60,6 +63,7 @@ function Login({ onLoginSuccess }) {
                 await window.electronAPI.saveSettings({
                     naylatools_token: token
                 });
+                localStorage.setItem("TokenNaylaTools", token);
                 toast.success('Login sukses!');
                 onLoginSuccess();
             } else if (data && data.pesan) {

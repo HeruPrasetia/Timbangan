@@ -6,8 +6,9 @@ function setupWeighingHandlers() {
     ipcMain.handle('save-weight', async (event, data) => {
         console.log('--- IPC save-weight received ---', data);
         try {
-            const { id, weight, unit, price, noted_weight, plate_number, party_name, notes, trx_type, weight_1, weight_2, diff_weight, driver_name, refaksi, product_name } = data;
+            const { id, weight, unit, price, noted_weight, plate_number, party_name, notes, trx_type, weight_1, weight_2, diff_weight, driver_name, refaksi, product_name, CardID, ItemID } = data;
             console.log(`[DEBUG] Received Weight Save: ID=${id}, Type=${trx_type}`);
+            let DocNumber = "";
 
             // Ensure all named parameters strictly exist
             const safeData = {
@@ -26,11 +27,14 @@ function setupWeighingHandlers() {
                 driver_name: driver_name || '',
                 refaksi: refaksi || 0,
                 notes: notes || '',
-                doc_number: db.generateDocNumber(trx_type == 'Pembelian' ? 'PURCH' : 'SALES')
+                cardid: CardID || 0,
+                itemid: ItemID || 0
             };
 
             if (id) {
                 // Update existing record (Second Stage)
+                const Data = db.prepare('SELECT * FROM weights WHERE id = ?').get(id);
+                DocNumber = Data ? Data.doc_number : '';
                 const stmt = db.prepare(`
                     UPDATE weights SET
                         weight = @weight,
@@ -53,22 +57,23 @@ function setupWeighingHandlers() {
                     console.error('Sync Preparation Error:', syncErr);
                 }
 
-                return { success: true, id: id };
+                return { success: true, id: id, DocNumber };
             } else {
                 // Create new record (First Stage)
+                DocNumber = db.generateDocNumber(trx_type == 'Pembelian' ? 'PURCH' : 'SALES');
                 const stmt = db.prepare(`
                     INSERT INTO weights (
                         weight, unit, price, noted_weight, diff_weight,
                         plate_number, party_name, product_name, trx_type,
-                        weight_1, weight_2, driver_name, doc_number, refaksi, timestamp_1, notes
+                        weight_1, weight_2, driver_name, doc_number, refaksi, timestamp_1, notes, cardid, itemid
                     ) VALUES (
                         @weight, @unit, @price, @noted_weight, @diff_weight,
                         @plate_number, @party_name, @product_name, @trx_type,
-                        @weight_1, @weight_2, @driver_name, @doc_number, @refaksi, DATETIME('now', 'localtime'), @notes
+                        @weight_1, @weight_2, @driver_name, @doc_number, @refaksi, DATETIME('now', 'localtime'), @notes, @cardid, @itemid
                     )
                 `);
-                const info = stmt.run(safeData);
-                return { success: true, id: info.lastInsertRowid };
+                const info = stmt.run({ ...safeData, doc_number: DocNumber });
+                return { success: true, id: info.lastInsertRowid, DocNumber };
             }
         } catch (error) {
             console.error('DB Save Error:', error);
