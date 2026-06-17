@@ -1,7 +1,10 @@
 import { ChevronLeft, ChevronRight, Download, Edit, Package, Printer, Save, Search, Trash2, Truck, Upload, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useToast } from '../hooks/useToast';
+import { apiGo } from '../utils/tokenUtils';
 
 const History = () => {
+    const toast = useToast();
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
@@ -122,8 +125,24 @@ const History = () => {
         return 'diff-zero';
     };
 
-    const handleUpload = async ()=>{
-        console.log("Hallo");
+    const handleUpload = async () => {
+        let data = await window.electronAPI.getAllPendingData();
+        if (data.length == 0) return toast.warning('Tidak ada data pending!');
+        let ssql = "";
+        for (let dd of data) {
+            ssql += `("${dd.doc_number}", "${dd.trxType == "Pembelian" ? "Masuk" : "Keluar"}", "${dd.CardID}", "${dd.ItemID}", "${dd.noted_weight}", "${dd.weight}", "${dd.weight_1}", "${dd.weight_2}", "${dd.diff_weight}", "${dd.refaksi}", "${dd.timestamp_1}", "${dd.timestamp_2}", "${dd.driver_name}", "${dd.plate_number}"),`;
+        }
+        if (ssql != "") {
+            let sql = await apiGo("transTimbanganCrud", { act: "import", Data: ssql.replace(/,$/, "") });
+            if (sql.status == "sukses") {
+                window.electronAPI.updatePendingData(sql.data);
+                toast.success(sql.pesan);
+            } else {
+                toast.warning(sql.pesan);
+            }
+        } else {
+            toast.warning('Tidak ada data pending!');
+        }
     }
 
     return (

@@ -28,7 +28,10 @@ function initDatabase() {
         weight_1 REAL DEFAULT 0,
         weight_2 REAL DEFAULT 0,
         driver_name TEXT,
-        product_name TEXT
+        product_name TEXT,
+        CardID INTEGER DEFAULT 0,
+        ItemID INTEGER DEFAULT 0,
+        DocNumberReff VARCHAR(25) DEFAULT NULL
     )
     `);
 

@@ -104,6 +104,29 @@ function setupHistoryHandlers() {
         }
     });
 
+    ipcMain.handle('get-pending', async (event) => {
+        try {
+            let query = 'SELECT * FROM weights WHERE DocNumberReff IS NULL AND timestamp_2 IS NOT NULL AND CardID <> 0 AND ItemID <> 0';
+            const args = [];
+
+            const stmt = db.prepare(query);
+            return stmt.all(...args);
+        } catch (error) {
+            console.error('DB Fetch Error:', error);
+            return [];
+        }
+    });
+
+    ipcMain.handle('update-pending', async (event, data) => {
+        try {
+            for (let dd of data) db.prepare('UPDATE weights SET DocNumberReff = ? WHERE doc_number = ?').run(dd.DocNumberReff, dd.doc_number);
+            return true;
+        } catch (error) {
+            console.error('DB Delete Error:', error);
+            return false;
+        }
+    });
+
     ipcMain.handle('delete-history', async (event, id) => {
         try {
             db.prepare('DELETE FROM weights WHERE id = ?').run(id);
@@ -155,8 +178,6 @@ function setupHistoryHandlers() {
     ipcMain.handle('update-docnumber', async (event, data) => {
         try {
             const { DocNumberReff, doc_number } = data;
-            console.log("Docnumber dari server => ", DocNumberReff);
-            console.log("DocNumber data lokal => ", doc_number);
             const stmt = db.prepare(`UPDATE weights SET DocNumberReff = @DocNumberReff WHERE doc_number = @doc_number`);
 
             stmt.run({ DocNumberReff, doc_number });
