@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getHistory: (params) => ipcRenderer.invoke('get-history', params),
     getAllPendingData: () => ipcRenderer.invoke('get-pending'),
     updatePendingData: (data) => ipcRenderer.invoke('update-pending', data),
+    updateReffTrans: (docnumber) => ipcRenderer.invoke('update-refftrans', docnumber),
     getHistoryCount: (params) => ipcRenderer.invoke('get-history-count', params),
     getHistorySummary: (params) => ipcRenderer.invoke('get-history-summary', params),
     getPendingWeights: () => ipcRenderer.invoke('get-pending-weights'),

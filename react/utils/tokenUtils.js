@@ -1,5 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
-export const Token = localStorage.getItem("TokenNaylaTools");
+export const getToken = () => localStorage.getItem("TokenNaylaTools");
 
 /**
  * Validate JWT token expiration
@@ -83,10 +83,11 @@ export function encrypt(text, shift) {
 }
 
 function getShiftFromToken() {
-    if (!Token) return 3;
+    const token = getToken();
+    if (!token) return 3;
     let sum = 0;
-    for (let i = 0; i < Token.length; i++) {
-        sum += Token.charCodeAt(i);
+    for (let i = 0; i < token.length; i++) {
+        sum += token.charCodeAt(i);
     }
     let shift = sum % 26;
     if (shift === 0) return 3;
@@ -95,7 +96,7 @@ function getShiftFromToken() {
 
 export function decrypt(text, shift) {
     if (shift === undefined) {
-        shift = getShiftFromToken(Token);
+        shift = getShiftFromToken();
     }
     if (isDevMode()) return JSON.parse(text);
 
@@ -103,6 +104,7 @@ export function decrypt(text, shift) {
 }
 
 export const apiGo = (url, data, isRaw = false) => {
+    const token = getToken();
     const isDev = isDevMode();
     const host = isDev ? 'http://localhost:3002/' : 'https://apigo.naylatools.com/';
     // const host = 'https://apigo.naylatools.com/';
@@ -111,7 +113,7 @@ export const apiGo = (url, data, isRaw = false) => {
             fetch(encodeURI(host + url), {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${Token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: isRaw ? data : jsonToForm(data),
             }).then(response => response.text()).then(hasil => {

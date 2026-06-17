@@ -443,6 +443,11 @@ export async function getSyncPayload(storeName) {
 
 export async function syncDatabase(Master = "all") {
     try {
+        const token = localStorage.getItem("TokenNaylaTools");
+        if (!token) {
+            console.warn("Sinkronisasi database ditunda: Token tidak ditemukan.");
+            return;
+        }
         const payload = { TargetMaster: Master };
         const syncTables = [
             "MasterItem", "MasterItemUnit", "MasterAkun",
@@ -457,7 +462,6 @@ export async function syncDatabase(Master = "all") {
         }
 
         const res = await apiGo("SyncMaster", payload);
-        console.log(res);
 
         if (res && res.status === "sukses") {
             for (const table of syncTables) {

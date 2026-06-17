@@ -119,7 +119,17 @@ function setupHistoryHandlers() {
 
     ipcMain.handle('update-pending', async (event, data) => {
         try {
-            for (let dd of data) db.prepare('UPDATE weights SET DocNumberReff = ? WHERE doc_number = ?').run(dd.DocNumberReff, dd.doc_number);
+            for (let dd of data) db.prepare('UPDATE weights SET DocNumberReff = ? WHERE doc_number = ?').run(dd.DocNumberReff, dd.DocNumber);
+            return true;
+        } catch (error) {
+            console.error('DB Delete Error:', error);
+            return false;
+        }
+    });
+
+    ipcMain.handle('update-refftrans', async (event, docnumber) => {
+        try {
+            db.prepare('UPDATE weights SET DocNumberReff = null WHERE doc_number = ?').run(docnumber);
             return true;
         } catch (error) {
             console.error('DB Delete Error:', error);

@@ -1,5 +1,5 @@
 import { BarChart3, History as HistoryIcon, LayoutDashboard, LogOut, Settings as SettingsIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import LogoPanjang from './assets/LogoPanjang.png';
 import ToastContainer from './components/Toast';
 import WebSocketLogPanel from './components/WebSocketLogPanel';
@@ -156,6 +156,10 @@ function AppInner() {
                             const datamaster = data.data;
                             if (master === 'MasterItemUnit') {
                                 for (let dd of datamaster) await deleteDatabase('MasterItemUnit', { ItemID: dd.ItemID });
+                            } else if (master == "TransTimbangan") {
+                                console.log(datamaster);
+                                window.electronAPI.updateReffTrans(datamaster[0].ReffDocNumber);
+                                return;
                             }
                             await insertDatabase(master, datamaster);
                             console.log(`[App WS] Master ${master} updated (${datamaster.length} records)`);
