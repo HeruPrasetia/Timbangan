@@ -89,7 +89,7 @@ export function decrypt(text, shift, token) {
     if (shift === undefined) {
         shift = getShiftFromToken(token);
     }
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';) {
         try {
             return JSON.parse(text);
         } catch (e) {
