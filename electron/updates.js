@@ -11,6 +11,10 @@ function setupUpdatesHandlers() {
         return app.getVersion();
     });
 
+    ipcMain.handle('is-packaged', () => {
+        return app.isPackaged;
+    });
+
     ipcMain.handle('download-update', async (event) => {
         return new Promise((resolve, reject) => {
             const url = 'http://iot.naylatools.com/timbangan.exe';

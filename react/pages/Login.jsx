@@ -48,7 +48,7 @@ function Login({ onLoginSuccess }) {
             const responseText = await response.text();
             let data = null;
             try {
-                data = decrypt(responseText, undefined, undefined);
+                data = decrypt(responseText, 3);
             } catch (decErr) {
                 try {
                     data = JSON.parse(responseText);

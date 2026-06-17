@@ -165,6 +165,12 @@ const Settings = () => {
         setIsPassModalOpen(true);
     };
 
+    const handleDevToolsOpen = () => {
+        setPendingAction('devtools');
+        setPasswordInput('');
+        setIsPassModalOpen(true);
+    };
+
     const handlePassSubmit = (e) => {
         if (e) e.preventDefault();
         if (passwordInput === 'naylatools') {
@@ -185,6 +191,8 @@ const Settings = () => {
                 setQueryResult(null);
                 setQueryStatus({ message: '', type: '' });
                 setIsSqlModalOpen(true);
+            } else if (pendingAction === 'devtools') {
+                window.electronAPI.toggleDevTools();
             }
         } else {
             alert('Password salah!');
@@ -393,6 +401,10 @@ const Settings = () => {
 
                     <button id="open-sql-btn" className="primary-btn" onClick={handleSqlOpen} style={{ background: '#555', color: 'white' }}>
                         <Terminal size={18} /> SQL Console
+                    </button>
+
+                    <button id="open-devtools-btn" className="primary-btn" onClick={handleDevToolsOpen} style={{ background: '#555', color: 'white' }}>
+                        <Terminal size={18} /> DevTools / Inspect Element
                     </button>
 
                     <button id="reset-db-btn" className="primary-btn" onClick={handleReset} style={{ background: 'var(--danger-color)', color: 'black' }}>

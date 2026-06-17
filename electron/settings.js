@@ -120,6 +120,18 @@ function setupSettingsHandlers(mainWindow) {
             return { success: false, error: error.message };
         }
     });
+
+    ipcMain.handle('toggle-devtools', async () => {
+        try {
+            if (mainWindow) {
+                mainWindow.webContents.toggleDevTools();
+                return { success: true };
+            }
+            return { success: false, error: 'Main window not found' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
 }
 
 module.exports = { setupSettingsHandlers };

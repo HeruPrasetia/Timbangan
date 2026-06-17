@@ -1,6 +1,6 @@
 {
   "name": "timbangan",
-  "version": "3.1.6",
+  "version": "3.1.8",
   "description": "Timbangan App",
   "main": "main.js",
   "repository": {
@@ -14,7 +14,7 @@
     "build": "bun run build-react && bun run buildwin",
     "build-react": "vite build --outDir dist-react",
     "buildwin": "electron-builder --win nsis --x64",
-    "buildmac": "electron-builder build --mac",
+    "buildmac": "bun run build-react && electron-builder build --mac",
     "rebuild": "electron-rebuild -f"
   },
   "keywords": [],

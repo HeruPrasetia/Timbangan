@@ -1,4 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
+export const Token = localStorage.getItem("TokenNaylaTools");
 
 /**
  * Validate JWT token expiration
@@ -59,6 +60,13 @@ export const getTokenExpiresIn = (token) => {
     }
 };
 
+export const isDevMode = () => {
+    if (window.electronAPI && typeof window.electronAPI.isPackagedSync === 'boolean') {
+        return !window.electronAPI.isPackagedSync;
+    }
+    return !!(import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+};
+
 export function encrypt(text, shift) {
     let result = '';
     for (let i = 0; i < text.length; i++) {
@@ -74,37 +82,30 @@ export function encrypt(text, shift) {
     return result;
 }
 
-export function getShiftFromToken(token) {
-    if (!token) return 3;
+function getShiftFromToken() {
+    if (!Token) return 3;
     let sum = 0;
-    for (let i = 0; i < token.length; i++) {
-        sum += token.charCodeAt(i);
+    for (let i = 0; i < Token.length; i++) {
+        sum += Token.charCodeAt(i);
     }
     let shift = sum % 26;
     if (shift === 0) return 3;
     return shift;
 }
 
-export function decrypt(text, shift, token) {
+export function decrypt(text, shift) {
     if (shift === undefined) {
-        shift = getShiftFromToken(token);
+        shift = getShiftFromToken(Token);
     }
-    if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';) {
-        try {
-            return JSON.parse(text);
-        } catch (e) {
-            // Fallback to decrypt if it's encrypted on localhost
-        }
-    }
+    if (isDevMode()) return JSON.parse(text);
 
     return JSON.parse(encrypt(text, 26 - shift));
 }
 
-
-export const apiGo = (url, data, debug = false, isRaw = false) => {
-    const Token = localStorage.getItem("TokenNaylaTools");
-    const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+export const apiGo = (url, data, isRaw = false) => {
+    const isDev = isDevMode();
     const host = isDev ? 'http://localhost:3002/' : 'https://apigo.naylatools.com/';
+    // const host = 'https://apigo.naylatools.com/';
     try {
         return new Promise((resolve, reject) => {
             fetch(encodeURI(host + url), {

@@ -54,6 +54,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getHistoryById: (id) => ipcRenderer.invoke('get-history-by-id', id),
     // Update API
     getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    isPackaged: () => ipcRenderer.invoke('is-packaged'),
+    isPackagedSync: (() => {
+        const arg = process.argv.find(a => a.startsWith('--is-packaged='));
+        return arg ? arg.split('=')[1] === 'true' : false;
+    })(),
     downloadUpdate: () => ipcRenderer.invoke('download-update'),
     onUpdateProgress: (callback) => {
         const listener = (event, percent) => callback(percent);
@@ -69,6 +74,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Advanced SQL
     executeSql: (query) => ipcRenderer.invoke('execute-sql', query),
+    toggleDevTools: () => ipcRenderer.invoke('toggle-devtools'),
 
     // Reports
     getReportStats: (params) => ipcRenderer.invoke('get-report-stats', params),

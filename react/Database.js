@@ -443,9 +443,6 @@ export async function getSyncPayload(storeName) {
 
 export async function syncDatabase(Master = "all") {
     try {
-        window.dispatchEvent(new Event('sync-start'));
-        console.log(`Memulai sinkronisasi master data (${Master})...`);
-
         const payload = { TargetMaster: Master };
         const syncTables = [
             "MasterItem", "MasterItemUnit", "MasterAkun",
@@ -460,6 +457,7 @@ export async function syncDatabase(Master = "all") {
         }
 
         const res = await apiGo("SyncMaster", payload);
+        console.log(res);
 
         if (res && res.status === "sukses") {
             for (const table of syncTables) {
@@ -476,7 +474,5 @@ export async function syncDatabase(Master = "all") {
         }
     } catch (error) {
         console.error("Gagal melakukan sinkronisasi master data:", error);
-    } finally {
-        window.dispatchEvent(new Event('sync-end'));
     }
 }

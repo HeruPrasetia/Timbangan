@@ -45,7 +45,8 @@ function createMainWindow() {
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
-            nodeIntegration: false
+            nodeIntegration: false,
+            additionalArguments: [`--is-packaged=${app.isPackaged}`]
         },
         icon: path.join(__dirname, 'react', 'assets', 'Logo.png'),
         autoHideMenuBar: true
