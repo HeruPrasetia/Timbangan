@@ -508,7 +508,18 @@ const Timbangan = () => {
                     <div className="settings-card">
                         <label>Configuration</label>
                         <div className="input-group">
-                            <span>Serial Port</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>Serial Port</span>
+                                <button 
+                                    className="icon-btn" 
+                                    title="Refresh Ports" 
+                                    onClick={refreshPorts} 
+                                    disabled={isConnected}
+                                    style={{ padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}
+                                >
+                                    <RefreshCw size={14} />
+                                </button>
+                            </div>
                             <select value={selectedPort} onChange={(e) => setSelectedPort(e.target.value)} disabled={isConnected}>
                                 <option value="" disabled>Pilih Port...</option>
                                 {ports.map((port) => (

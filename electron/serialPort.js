@@ -13,21 +13,6 @@ function setupSerialPortHandlers() {
     }
 
     ipcMain.handle('list-ports', async () => {
-        if (!app.isPackaged) {
-            return [
-                {
-                    path: "/tmp/scaleA",
-                    manufacturer: "Fake Scale",
-                    serialNumber: "DEV",
-                    pnpId: "socat",
-                    locationId: "fake",
-                    vendorId: "0000",
-                    productId: "0000"
-                }
-            ];
-
-        }
-
         return await SerialPort.list();
     });
 
