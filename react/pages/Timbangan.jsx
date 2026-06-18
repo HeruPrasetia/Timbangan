@@ -94,6 +94,8 @@ const Timbangan = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [partyList, setPartyList] = useState([]);
     const [dataCard, setDataCard] = useState([]);
+    const [dataCustomer, setDataCustomer] = useState([]);
+    const [dataSuplier, setDataSuplier] = useState([]);
     const [dataItem, setDataItem] = useState([]);
 
     const lastParsedTime = useRef(0);
@@ -294,9 +296,11 @@ const Timbangan = () => {
 
     const openSaveModal = async () => {
         // Reset Modal
-        let Card = await searchDatabase("MasterPelanggan", {});
+        let Customer = await searchDatabase("MasterPelanggan", {});
+        let Suplier = await searchDatabase("MasterSuplier", {});
         let Item = await searchDatabase("MasterItem", {});
-        setDataCard(Card);
+        setDataCustomer(Customer);
+        setDataSuplier(Suplier);
         setDataItem(Item);
         setPartyName('');
         setProductName('');
@@ -551,7 +555,7 @@ const Timbangan = () => {
                             {currentStage === 2 && (
                                 <div className="pending-area">
                                     <label>Pilih Data Timbang Pertama</label>
-                                    <Select className="modal-select"
+                                    <Select
                                         options={pendingRecords.map((item) => ({
                                             value: item.id,
                                             label: `${item.doc_number} - 🚚 ${item.plate_number} - ${item.product_name} (${Math.round(item.weight_1)} kg)`
@@ -592,18 +596,31 @@ const Timbangan = () => {
 
                             <div className="input-grid">
                                 <div className="input-group">
-                                    <label style={{ marginBottom: 0 }}><User size={14} /> Supplier / Pelanggan</label>
+                                    <label><Info size={14} /> Jenis Transaksi</label>
+                                    <select value={trxType} onChange={(e) => setTrxType(e.target.value)} disabled={currentStage === 2}>
+                                        <option value="Pembelian">Pembelian</option>
+                                        <option value="Penjualan">Penjualan</option>
+                                    </select>
+                                </div>
+
+                                <div className="input-group">
+                                    <label style={{ marginBottom: 0 }}><User size={14} /> {trxType === "Pembelian" ? "Suplier" : "Pelanggan"}</label>
                                     <Select
-                                        className="modal-select"
-                                        options={dataCard.map((item) => ({
-                                            value: item.ID,
-                                            label: `${item.MemberCode} - ${item.Nama} (${item.Telp})`,
-                                            itemData: item
-                                        }))}
+                                        options={trxType === "Pembelian" ?
+                                            dataSuplier.map((item) => ({
+                                                value: item.ID,
+                                                label: `${item.MemberCode} - ${item.Nama} (${item.Telp})`,
+                                                itemData: item
+                                            })) : dataCustomer.map((item) => ({
+                                                value: item.ID,
+                                                label: `${item.MemberCode} - ${item.Nama} (${item.Telp})`,
+                                                itemData: item
+                                            }))
+                                        }
                                         value={cardId ? {
                                             value: cardId,
-                                            label: dataCard.find(c => c.ID === cardId)
-                                                ? `${dataCard.find(c => c.ID === cardId).MemberCode} - ${dataCard.find(c => c.ID === cardId).Nama} (${dataCard.find(c => c.ID === cardId).Telp})`
+                                            label: (trxType === "Pembelian" ? dataSuplier : dataCustomer).find(c => c.ID === cardId)
+                                                ? `${(trxType === "Pembelian" ? dataSuplier : dataCustomer).find(c => c.ID === cardId).MemberCode} - ${(trxType === "Pembelian" ? dataSuplier : dataCustomer).find(c => c.ID === cardId).Nama} (${(trxType === "Pembelian" ? dataSuplier : dataCustomer).find(c => c.ID === cardId).Telp})`
                                                 : partyName
                                         } : null}
                                         onChange={(option) => {
@@ -625,7 +642,6 @@ const Timbangan = () => {
                                 <div className="input-group">
                                     <label><Package size={14} /> Jenis Barang</label>
                                     <Select
-                                        className="modal-select"
                                         options={dataItem.map((item) => ({
                                             value: item.ID,
                                             label: `${item.Code} - ${item.Nama}`,
@@ -653,13 +669,7 @@ const Timbangan = () => {
                                     />
                                 </div>
 
-                                <div className="input-group">
-                                    <label><Info size={14} /> Jenis Transaksi</label>
-                                    <select value={trxType} onChange={(e) => setTrxType(e.target.value)} disabled={currentStage === 2}>
-                                        <option value="Pembelian">Pembelian</option>
-                                        <option value="Penjualan">Penjualan</option>
-                                    </select>
-                                </div>
+
                                 <div className="input-group">
                                     <label><Truck size={14} /> Nomor Plat Kendaraan</label>
                                     <input type="text" placeholder="Contoh: B 1234 ABC" value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} disabled={currentStage === 2} />
