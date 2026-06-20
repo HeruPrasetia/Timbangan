@@ -1,7 +1,66 @@
 import { ChevronLeft, ChevronRight, Download, Edit, Package, Printer, Save, Search, Trash2, Truck, Upload, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import Select from 'react-select';
+import { searchDatabase } from '../Database';
 import { useToast } from '../hooks/useToast';
 import { apiGo } from '../utils/tokenUtils';
+
+const customSelectStyles = {
+    control: (provided, state) => ({
+        ...provided,
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        borderColor: state.isFocused ? 'var(--accent-color)' : 'var(--border-color)',
+        borderRadius: state.menuIsOpen ? '12px 12px 0 0' : '12px',
+        padding: '2px',
+        boxShadow: state.isFocused ? '0 0 0 1px var(--accent-color)' : 'none',
+        '&:hover': {
+            borderColor: 'var(--accent-color)'
+        }
+    }),
+    menu: (provided) => ({
+        ...provided,
+        backgroundColor: 'var(--card-bg)',
+        border: '1px solid var(--accent-color)',
+        borderTop: 'none',
+        borderRadius: '0 0 12px 12px',
+        margin: 0,
+        overflow: 'hidden',
+        zIndex: 9999,
+        boxSizing: 'border-box',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--accent-color)'
+    }),
+    menuList: (provided) => ({
+        ...provided,
+        padding: 0
+    }),
+    option: (provided, state) => ({
+        ...provided,
+        backgroundColor: state.isSelected
+            ? 'var(--accent-color)'
+            : state.isFocused
+                ? 'rgba(148, 163, 184, 0.1)'
+                : 'transparent',
+        color: state.isSelected ? '#0f172a' : 'var(--text-primary)',
+        cursor: 'pointer',
+        padding: '10px 10px',
+        '&:active': {
+            backgroundColor: 'var(--accent-color)',
+            color: '#0f172a'
+        }
+    }),
+    singleValue: (provided) => ({
+        ...provided,
+        color: 'var(--text-primary)'
+    }),
+    input: (provided) => ({
+        ...provided,
+        color: 'var(--text-primary)'
+    }),
+    placeholder: (provided) => ({
+        ...provided,
+        color: 'var(--text-secondary)'
+    })
+};
 
 const History = () => {
     const toast = useToast();
@@ -18,6 +77,9 @@ const History = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [summary, setSummary] = useState({ totalWeight: 0, totalDiff: 0, count: 0 });
+    const [dataCustomer, setDataCustomer] = useState([]);
+    const [dataSuplier, setDataSuplier] = useState([]);
+    const [dataItem, setDataItem] = useState([]);
 
     useEffect(() => {
         loadHistory();
@@ -79,7 +141,13 @@ const History = () => {
         }
     };
 
-    const handleEdit = (item) => {
+    const handleEdit = async (item) => {
+        const Customer = await searchDatabase("MasterPelanggan", {});
+        const Suplier = await searchDatabase("MasterSuplier", {});
+        const Item = await searchDatabase("MasterItem", {});
+        setDataCustomer(Customer);
+        setDataSuplier(Suplier);
+        setDataItem(Item);
         setEditingItem({ ...item });
         setIsEditModalOpen(true);
     };
@@ -109,6 +177,37 @@ const History = () => {
 
             const result = await window.electronAPI.updateHistory(updatedData);
             if (result.success) {
+                let responseData = await apiGo("transTimbanganCrud", {
+                    'act': 'edit',
+                    'DocType': editingItem.trx_type === "Pembelian" ? "Masuk" : "Keluar",
+                    'DocDate': new Date(editingItem.timestamp || Date.now()).toISOString().split('T')[0],
+                    'CardID': editingItem.CardID || 0,
+                    'CardName': editingItem.party_name,
+                    'ItemID': editingItem.ItemID || 0,
+                    'ItemName': editingItem.product_name,
+                    'Qty': updatedData.weight,
+                    'QtyUnit': 'kg',
+                    'UnitName': 'kg',
+                    'Price': editingItem.price || 0,
+                    'Total': updatedData.weight * (editingItem.price || 0),
+                    'NotaWeight': updatedData.diff_weight + updatedData.weight,
+                    'StartWeight': editingItem.weight_1 || 0,
+                    'EndWeight': editingItem.weight_2 || 0,
+                    'PlatNomer': editingItem.plate_number,
+                    'Driver': editingItem.driver_name,
+                    'Kendaraan': editingItem.plate_number,
+                    'DocNumber': editingItem.doc_number,
+                    'Refraksi': editingItem.refaksi || 0,
+                });
+
+                if (responseData && (responseData.status === 'sukses' || responseData.success)) {
+                    toast.success('Data tersinkronisasi ke server!');
+                } else if (responseData && responseData.pesan) {
+                    toast.error(`Server: ${responseData.pesan}`);
+                } else {
+                    toast.error(`Server error: ${response.status}`);
+                }
+
                 setIsEditModalOpen(false);
                 loadHistory();
             } else {
@@ -372,18 +471,62 @@ const History = () => {
                                         </div>
                                         <div className="input-group">
                                             <label>Nama Supplier / Pelanggan</label>
-                                            <input
-                                                type="text"
-                                                value={editingItem.party_name || ''}
-                                                onChange={(e) => setEditingItem({ ...editingItem, party_name: e.target.value })}
+                                            <Select
+                                                options={editingItem.trx_type === 'Pembelian' ?
+                                                    dataSuplier.map((item) => ({
+                                                        value: item.ID,
+                                                        label: `${item.MemberCode} - ${item.Nama} (${item.Telp})`,
+                                                        itemData: item
+                                                    })) : dataCustomer.map((item) => ({
+                                                        value: item.ID,
+                                                        label: `${item.MemberCode} - ${item.Nama} (${item.Telp})`,
+                                                        itemData: item
+                                                    }))
+                                                }
+                                                value={editingItem.CardID ? {
+                                                    value: editingItem.CardID,
+                                                    label: (editingItem.trx_type === 'Pembelian' ? dataSuplier : dataCustomer).find(c => c.ID === editingItem.CardID)
+                                                        ? `${(editingItem.trx_type === 'Pembelian' ? dataSuplier : dataCustomer).find(c => c.ID === editingItem.CardID).MemberCode} - ${(editingItem.trx_type === 'Pembelian' ? dataSuplier : dataCustomer).find(c => c.ID === editingItem.CardID).Nama} (${(editingItem.trx_type === 'Pembelian' ? dataSuplier : dataCustomer).find(c => c.ID === editingItem.CardID).Telp})`
+                                                        : editingItem.party_name
+                                                } : null}
+                                                onChange={(option) => {
+                                                    if (option) {
+                                                        setEditingItem({ ...editingItem, CardID: option.value, party_name: option.itemData.Nama });
+                                                    } else {
+                                                        setEditingItem({ ...editingItem, CardID: 0, party_name: '' });
+                                                    }
+                                                }}
+                                                placeholder="Cari Pelanggan / Suplier..."
+                                                styles={customSelectStyles}
+                                                isClearable
+                                                isSearchable
                                             />
                                         </div>
                                         <div className="input-group">
                                             <label>Jenis Barang</label>
-                                            <input
-                                                type="text"
-                                                value={editingItem.product_name || ''}
-                                                onChange={(e) => setEditingItem({ ...editingItem, product_name: e.target.value })}
+                                            <Select
+                                                options={dataItem.map((item) => ({
+                                                    value: item.ID,
+                                                    label: `${item.Code} - ${item.Nama}`,
+                                                    itemData: item
+                                                }))}
+                                                value={editingItem.ItemID ? {
+                                                    value: editingItem.ItemID,
+                                                    label: dataItem.find(i => i.ID === editingItem.ItemID)
+                                                        ? `${dataItem.find(i => i.ID === editingItem.ItemID).Code} - ${dataItem.find(i => i.ID === editingItem.ItemID).Nama}`
+                                                        : editingItem.product_name
+                                                } : null}
+                                                onChange={(option) => {
+                                                    if (option) {
+                                                        setEditingItem({ ...editingItem, ItemID: option.value, product_name: option.itemData.Nama });
+                                                    } else {
+                                                        setEditingItem({ ...editingItem, ItemID: 0, product_name: '' });
+                                                    }
+                                                }}
+                                                placeholder="Cari Barang..."
+                                                styles={customSelectStyles}
+                                                isClearable
+                                                isSearchable
                                             />
                                         </div>
                                         <div className="input-group">

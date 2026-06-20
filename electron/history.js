@@ -154,7 +154,7 @@ function setupHistoryHandlers() {
 
     ipcMain.handle('update-history', async (event, data) => {
         try {
-            const { id, weight, unit, price, noted_weight, plate_number, party_name, product_name, trx_type, weight_1, weight_2, diff_weight, driver_name, refaksi, notes } = data;
+            const { id, weight, unit, price, noted_weight, plate_number, party_name, product_name, trx_type, weight_1, weight_2, diff_weight, driver_name, refaksi, notes, CardID, ItemID } = data;
 
             const stmt = db.prepare(`
                 UPDATE weights SET
@@ -168,14 +168,16 @@ function setupHistoryHandlers() {
                     refaksi = @refaksi,
                     notes = @notes,
                     weight = @weight,
-                    diff_weight = @diff_weight
+                    diff_weight = @diff_weight,
+                    CardID = @CardID,
+                    ItemID = @ItemID
                 WHERE id = @id
             `);
 
             stmt.run({
                 id, price, noted_weight, plate_number, party_name,
                 product_name, trx_type, driver_name, refaksi, notes,
-                weight, diff_weight
+                weight, diff_weight, CardID: CardID || 0, ItemID: ItemID || 0
             });
 
             return { success: true };
