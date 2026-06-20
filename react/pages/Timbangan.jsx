@@ -30,6 +30,10 @@ const customSelectStyles = {
         boxSizing: 'border-box',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--accent-color)'
     }),
+    menuPortal: (provided) => ({
+        ...provided,
+        zIndex: 9999
+    }),
     menuList: (provided) => ({
         ...provided,
         padding: 0
@@ -582,6 +586,7 @@ const Timbangan = () => {
                                         styles={customSelectStyles}
                                         isClearable
                                         isSearchable
+                                        menuPortalTarget={document.body}
                                     />
                                 </div>
                             )}
@@ -647,6 +652,7 @@ const Timbangan = () => {
                                         styles={customSelectStyles}
                                         isClearable
                                         isSearchable
+                                        menuPortalTarget={document.body}
                                     />
                                 </div>
 
@@ -677,6 +683,7 @@ const Timbangan = () => {
                                         styles={customSelectStyles}
                                         isClearable
                                         isSearchable
+                                        menuPortalTarget={document.body}
                                     />
                                 </div>
 
