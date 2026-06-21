@@ -40,8 +40,16 @@
         }
 
         @media print {
+            * {
+                text-shadow: none !important;
+                -webkit-font-smoothing: none !important;
+                -moz-osx-font-smoothing: none !important;
+                font-smoothing: none !important;
+            }
+
             body {
                 margin: 0;
+                font-family: 'Courier New', Courier, monospace !important;
             }
 
             .no-print {
