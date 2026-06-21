@@ -470,7 +470,14 @@ const History = () => {
                                             />
                                         </div>
                                         <div className="input-group">
-                                            <label>Nama Supplier / Pelanggan</label>
+                                            <label>Jenis Transaksi</label>
+                                            <select value={editingItem.trx_type || 'Pembelian'} onChange={(e) => setEditingItem({ ...editingItem, trx_type: e.target.value })}>
+                                                <option value="Pembelian">Pembelian</option>
+                                                <option value="Penjualan">Penjualan</option>
+                                            </select>
+                                        </div>
+                                        <div className="input-group">
+                                            <label>{editingItem.trx_type === 'Pembelian' ? "Suplier" : "Pelanggan"}</label>
                                             <Select
                                                 options={editingItem.trx_type === 'Pembelian' ?
                                                     dataSuplier.map((item) => ({
@@ -503,7 +510,7 @@ const History = () => {
                                             />
                                         </div>
                                         <div className="input-group">
-                                            <label>Jenis Barang</label>
+                                            <label>Barang</label>
                                             <Select
                                                 options={dataItem.map((item) => ({
                                                     value: item.ID,
@@ -529,16 +536,7 @@ const History = () => {
                                                 isSearchable
                                             />
                                         </div>
-                                        <div className="input-group">
-                                            <label>Jenis Transaksi</label>
-                                            <select
-                                                value={editingItem.trx_type || 'Pembelian'}
-                                                onChange={(e) => setEditingItem({ ...editingItem, trx_type: e.target.value })}
-                                            >
-                                                <option value="Pembelian">Pembelian</option>
-                                                <option value="Penjualan">Penjualan</option>
-                                            </select>
-                                        </div>
+
                                         <div className="input-group">
                                             <label>Nama Sopir</label>
                                             <input
