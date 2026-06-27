@@ -23,6 +23,7 @@ const Settings = () => {
     const [googleScriptUrl, setGoogleScriptUrl] = useState('');
     const [naylatoolsToken, setNaylaToolsToken] = useState('');
     const [appTheme, setAppTheme] = useState('dark');
+    const [serialDivisor, setSerialDivisor] = useState('1');
 
     const [templates, setTemplates] = useState([]);
     const [appVersion, setAppVersion] = useState('...');
@@ -77,6 +78,7 @@ const Settings = () => {
                 setGoogleScriptUrl(settings.google_script_url || '');
                 setAppTheme(settings.app_theme || 'dark');
                 setNaylaToolsToken(settings.naylatools_token || '');
+                setSerialDivisor(settings.serial_divisor || '1');
             }
         } catch (err) {
             console.error('Failed to load settings:', err);
@@ -122,7 +124,8 @@ const Settings = () => {
             const result = await window.electronAPI.saveSettings({
                 google_script_url: googleScriptUrl,
                 app_theme: appTheme,
-                naylatools_token: naylatoolsToken
+                naylatools_token: naylatoolsToken,
+                serial_divisor: serialDivisor
             });
             if (result.success) {
                 // Apply theme
@@ -379,6 +382,19 @@ const Settings = () => {
                             placeholder="Token NaylaTools"
                         />
                         <small style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Kosongkan untuk menonaktifkan sync otomatis.</small>
+                    </div>
+
+                    <div className="input-group">
+                        <label>Pembagi Nilai Timbangan (Divisor)</label>
+                        <input
+                            type="number"
+                            value={serialDivisor}
+                            onChange={(e) => setSerialDivisor(e.target.value)}
+                            placeholder="Contoh: 1, 10, 100, 1000"
+                            min="1"
+                            step="any"
+                        />
+                        <small style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Pembagi untuk nilai dari serial port (default: 1). Jika data terkirim 1000 dan harus dibaca 10 kg, isikan 100.</small>
                     </div>
 
                     <button className="primary-btn" onClick={handleSaveGeneral} style={{ marginTop: '10px' }}>

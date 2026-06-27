@@ -103,9 +103,26 @@ const Timbangan = () => {
     const [dataItem, setDataItem] = useState([]);
 
     const lastParsedTime = useRef(0);
+    const divisorRef = useRef(1);
 
     useEffect(() => {
         refreshPorts();
+
+        // Load settings and serial divisor
+        const loadSettings = async () => {
+            try {
+                const settings = await window.electronAPI.getSettings();
+                if (settings && settings.serial_divisor) {
+                    const parsed = parseFloat(settings.serial_divisor);
+                    if (!isNaN(parsed) && parsed > 0) {
+                        divisorRef.current = parsed;
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load divisor settings:', err);
+            }
+        };
+        loadSettings();
 
         // Restore connection status from backend
         const checkConnection = async () => {
@@ -267,10 +284,14 @@ const Timbangan = () => {
         try {
             if (sanitized.length < 8) return;
             let isNegative = sanitized.startsWith('-');
-            let coreValue = sanitized.substring(1, 7);
+            let coreValue = sanitized.substring(1, 8);
             let nilai = parseInt(coreValue);
             if (isNaN(nilai)) return;
-            const parsedWeight = isNegative ? -nilai : nilai;
+            let parsedWeight = isNegative ? -nilai : nilai;
+            const divisor = divisorRef.current;
+            if (divisor && divisor !== 1) {
+                parsedWeight = parseFloat((parsedWeight / divisor).toFixed(4));
+            }
             setWeight(parsedWeight);
 
             if (lastSentWeight.current !== parsedWeight) {
@@ -514,10 +535,10 @@ const Timbangan = () => {
                         <div className="input-group">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span>Serial Port</span>
-                                <button 
-                                    className="icon-btn" 
-                                    title="Refresh Ports" 
-                                    onClick={refreshPorts} 
+                                <button
+                                    className="icon-btn"
+                                    title="Refresh Ports"
+                                    onClick={refreshPorts}
                                     disabled={isConnected}
                                     style={{ padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}
                                 >
