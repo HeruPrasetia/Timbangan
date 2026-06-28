@@ -284,7 +284,7 @@ const Timbangan = () => {
         try {
             if (sanitized.length < 8) return;
             let isNegative = sanitized.startsWith('-');
-            let coreValue = sanitized.substring(1, 8);
+            let coreValue = sanitized.substring(1, 7);
             let nilai = parseInt(coreValue);
             if (isNaN(nilai)) return;
             let parsedWeight = isNegative ? -nilai : nilai;

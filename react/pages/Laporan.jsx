@@ -12,7 +12,7 @@ import {
     DoughnutController
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { RefreshCw, TrendingUp, Users, ShoppingCart, Package } from 'lucide-react';
+import { RefreshCw, TrendingUp, Users, ShoppingCart, Package, Truck } from 'lucide-react';
 
 ChartJS.register(
     CategoryScale,
@@ -36,6 +36,7 @@ const Laporan = () => {
     const [customerData, setCustomerData] = useState(null);
     const [productPembelianData, setProductPembelianData] = useState(null);
     const [productPenjualanData, setProductPenjualanData] = useState(null);
+    const [plateData, setPlateData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -90,6 +91,11 @@ const Laporan = () => {
 
             const productsOut = await window.electronAPI.getReportProductStats({ ...params, type: 'Penjualan' });
             processProductData(productsOut || [], setProductPenjualanData, 'rgba(233, 30, 99, 0.6)', '#E91E63');
+
+            // 5. Fetch Plate Stats
+            const plates = await window.electronAPI.getReportPlateStats(params);
+            console.log('Plates data received:', plates);
+            processPlateData(plates || []);
 
         } catch (error) {
             console.error('Failed to load report data:', error);
@@ -166,6 +172,21 @@ const Laporan = () => {
                 data: data.map(d => d.totalWeightNet || 0),
                 backgroundColor: bgColor,
                 borderColor: borderColor,
+                borderWidth: 1,
+                borderRadius: 8,
+            }]
+        });
+    };
+
+    const processPlateData = (data) => {
+        if (!Array.isArray(data)) return;
+        setPlateData({
+            labels: data.map(d => d.plate_number || 'Unknown'),
+            datasets: [{
+                label: 'Jumlah Transaksi',
+                data: data.map(d => d.totalTransactions || 0),
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: '#36A2EB',
                 borderWidth: 1,
                 borderRadius: 8,
             }]
@@ -281,6 +302,18 @@ const Laporan = () => {
                         </h4>
                         <div style={{ flex: 1, minHeight: 0 }}>
                             {productPenjualanData && <Bar data={productPenjualanData} options={{ ...chartOptions, indexAxis: 'y' }} />}
+                        </div>
+                    </section>
+                </div>
+
+                {/* Top Plates Section */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
+                    <section className="settings-card" style={{ padding: '24px', height: '450px' }}>
+                        <h4 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
+                            <Truck size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Top 10 Kendaraan (No. Polisi)
+                        </h4>
+                        <div style={{ flex: 1, minHeight: 0 }}>
+                            {plateData && <Bar data={plateData} options={{ ...chartOptions, indexAxis: 'y' }} />}
                         </div>
                     </section>
                 </div>

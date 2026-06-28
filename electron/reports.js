@@ -146,6 +146,45 @@ function setupReportsHandlers() {
             return [];
         }
     });
+
+    ipcMain.handle('get-report-plate-stats', async (event, { year, month }) => {
+        try {
+            const conditions = [];
+            const args = [];
+
+            if (year) {
+                conditions.push("strftime('%Y', timestamp) = ?");
+                args.push(String(year));
+            }
+            if (month) {
+                conditions.push("strftime('%m', timestamp) = ?");
+                args.push(String(month));
+            }
+
+            // Exclude empty plate numbers
+            conditions.push("plate_number IS NOT NULL AND plate_number != ''");
+
+            let query = `
+                SELECT 
+                    plate_number, 
+                    COUNT(*) as totalTransactions, 
+                    SUM(weight) as totalWeightNet
+                FROM weights
+            `;
+
+            if (conditions.length > 0) {
+                query += ' WHERE ' + conditions.join(' AND ');
+            }
+
+            query += ' GROUP BY plate_number ORDER BY totalTransactions DESC LIMIT 10';
+
+            const rows = db.prepare(query).all(...args);
+            return rows;
+        } catch (error) {
+            console.error('Report Plate Stats Error:', error);
+            return [];
+        }
+    });
 }
 
 module.exports = { setupReportsHandlers };
